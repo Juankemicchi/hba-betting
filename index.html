@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HBA Betting - Analizador de Apuestas</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f0f1e, #1a1a2e);
+      color: white;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 3.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #00ff88, #00b8ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      font-size: 1.4rem;
+      color: #aaa;
+      margin-bottom: 50px;
+    }
+    .sports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      margin-top: 40px;
+    }
+    .sport-card {
+      background: rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 30px 20px;
+      transition: all 0.3s;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .sport-card:hover {
+      transform: translateY(-10px);
+      background: rgba(255,255,255,0.15);
+      border-color: #00ff88;
+    }
+    .sport-card h3 {
+      font-size: 1.6rem;
+      margin: 15px 0 10px 0;
+    }
+    .coming-soon {
+      color: #ffaa00;
+      font-size: 0.9rem;
+    }
+    .btn {
+      background: #00ff88;
+      color: black;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 50px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: 0.3s;
+    }
+    .btn:hover {
+      background: #00cc6a;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>HBA Betting</h1>
+    <p class="subtitle">Analizador Profesional de Apuestas Deportivas</p>
+
+    <div class="sports-grid">
+      
+      <div class="sport-card">
+        <h2>🏀</h2>
+        <h3>NBA</h3>
+        <p>Player Props Analyzer</p>
+        <a href="https://TU-STREAMLIT-URL.streamlit.app" target="_blank">
+          <button class="btn">Entrar a NBA</button>
+        </a>
+      </div>
+
+      <div class="sport-card">
+        <h2>⚽</h2>
+        <h3>Fútbol</h3>
+        <p>Corners • Goles • Tarjetas • BTTS</p>
+        <span class="coming-soon">(En desarrollo)</span>
+        <button class="btn" onclick="alert('🚧 En desarrollo')">Entrar a Fútbol</button>
+      </div>
+
+      <div class="sport-card">
+        <h2>🎾</h2>
+        <h3>Tenis</h3>
+        <p>Juegos • Sets • Handicaps</p>
+        <span class="coming-soon">(En desarrollo)</span>
+        <button class="btn" onclick="alert('🚧 En desarrollo')">Entrar a Tenis</button>
+      </div>
+
+      <div class="sport-card">
+        <h2>🎮</h2>
+        <h3>E-Sports</h3>
+        <p>LoL • CS2 • Valorant</p>
+        <span class="coming-soon">(En desarrollo)</span>
+        <button class="btn" onclick="alert('🚧 En desarrollo')">Entrar a E-Sports</button>
+      </div>
+
+    </div>
+
+    <p style="margin-top: 60px; color: #555;">
+      HBA Betting • hbabetting.com
+    </p>
+  </div>
+</body>
+</html>
