@@ -72,22 +72,10 @@
       background: #00cc6a;
       transform: scale(1.05);
     }
-    #app-container {
-      display: none;
-      width: 100%;
-      height: 100vh;
-      margin-top: 20px;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      border-radius: 12px;
-    }
   </style>
 </head>
 <body>
-  <div class="container" id="home">
+  <div class="container">
     <h1>HBA Betting</h1>
     <p class="subtitle">Analizador Profesional de Apuestas Deportivas</p>
 
@@ -97,7 +85,9 @@
         <h2>🏀</h2>
         <h3>NBA</h3>
         <p>Player Props Analyzer</p>
-        <button class="btn" onclick="openApp('https://hba-nba-5sup4retmewb2wv2gvvppk.streamlit.app/')">Entrar a NBA</button>
+        <a href="https://hba-nba-5sup4retmewb2wv2gvvppk.streamlit.app/" target="_blank">
+          <button class="btn">Entrar a NBA</button>
+        </a>
       </div>
 
       <div class="sport-card">
@@ -130,24 +120,5 @@
       HBA Betting • hbabetting.com
     </p>
   </div>
-
-  <div id="app-container">
-    <button class="btn" style="margin: 15px;" onclick="goHome()">← Volver al inicio</button>
-    <iframe id="app-frame" src=""></iframe>
-  </div>
-
-  <script>
-    function openApp(url) {
-      document.getElementById('home').style.display = 'none';
-      document.getElementById('app-container').style.display = 'block';
-      document.getElementById('app-frame').src = url;
-    }
-
-    function goHome() {
-      document.getElementById('app-container').style.display = 'none';
-      document.getElementById('home').style.display = 'block';
-      document.getElementById('app-frame').src = '';
-    }
-  </script>
 </body>
 </html>
