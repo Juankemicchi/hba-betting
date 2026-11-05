@@ -50,7 +50,7 @@
       cursor: pointer;
     }
     .container {
-      max-width: 1200px;
+      max-width: 1100px;
       margin: 30px auto;
       padding: 0 20px;
     }
@@ -60,13 +60,14 @@
       padding: 25px;
       border: 1px solid #1f2937;
     }
-    input, select, button {
+    input, select {
       padding: 12px;
       border-radius: 8px;
       border: 1px solid #374151;
       background: #1f2937;
       color: white;
       margin: 5px;
+      width: 220px;
     }
     .analyze-btn {
       background: #10b981;
@@ -75,6 +76,7 @@
       border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
+      color: white;
     }
     #result {
       margin-top: 25px;
@@ -93,6 +95,10 @@
       font-weight: bold;
       color: #10b981;
     }
+    .coming {
+      color: #f59e0b;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
@@ -101,9 +107,9 @@
     <div class="logo">HBA BETTING</div>
     <div class="sports">
       <button class="sport-btn active">NBA</button>
-      <button class="sport-btn">Fútbol</button>
-      <button class="sport-btn">Tenis</button>
-      <button class="sport-btn">E-Sports</button>
+      <button class="sport-btn">Fútbol <span class="coming">(En desarrollo)</span></button>
+      <button class="sport-btn">Tenis <span class="coming">(En desarrollo)</span></button>
+      <button class="sport-btn">E-Sports <span class="coming">(En desarrollo)</span></button>
     </div>
     <button class="vip-btn">VIP AI Assistant</button>
   </div>
@@ -113,7 +119,7 @@
       <h2>NBA Player Props Analyzer</h2>
       <br>
       
-      <input type="text" id="player" placeholder="Nombre del jugador" value="Jalen Brunson">
+      <input type="text" id="player" placeholder="Ej: Luka Doncic" value="Luka Doncic">
       
       <select id="prop">
         <option value="PTS">Puntos</option>
@@ -129,9 +135,7 @@
         <option value="TD">Triple-Double</option>
       </select>
       
-      <select id="line">
-        <!-- Se llena con JavaScript -->
-      </select>
+      <select id="line"></select>
       
       <button class="analyze-btn" onclick="analyze()">Analizar</button>
 
@@ -140,19 +144,18 @@
   </div>
 
   <script>
-    // Llenar líneas .5
     const lineSelect = document.getElementById('line');
     for (let i = 0; i < 100; i++) {
       const val = (i + 0.5).toFixed(1);
       const opt = document.createElement('option');
       opt.value = val;
       opt.text = val;
-      if (val === "20.5") opt.selected = true;
+      if (val === "25.5") opt.selected = true;
       lineSelect.appendChild(opt);
     }
 
     async function analyze() {
-      const player = document.getElementById('player').value;
+      const player = document.getElementById('player').value.trim();
       const prop = document.getElementById('prop').value;
       const line = parseFloat(document.getElementById('line').value);
       const resultDiv = document.getElementById('result');
@@ -174,7 +177,7 @@
         const data = await response.json();
 
         if (!response.ok) {
-          resultDiv.innerHTML = `<p style="color:red">${data.detail}</p>`;
+          resultDiv.innerHTML = `<p style="color:#ef4444">${data.detail}</p>`;
           return;
         }
 
@@ -189,7 +192,7 @@
           </p>
         `;
       } catch (err) {
-        resultDiv.innerHTML = `<p style="color:red">Error de conexión. Intenta de nuevo.</p>`;
+        resultDiv.innerHTML = `<p style="color:#ef4444">Error de conexión. Intenta de nuevo.</p>`;
       }
     }
   </script>
