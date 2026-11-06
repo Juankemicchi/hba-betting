@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HBA Betting</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -13,29 +14,31 @@
     }
     .header {
       background: #111827;
-      padding: 15px 30px;
+      padding: 16px 30px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid #1f2937;
     }
     .logo {
-      font-size: 1.6rem;
+      font-size: 1.7rem;
       font-weight: bold;
       color: #fbbf24;
+      letter-spacing: 1px;
     }
     .sports {
       display: flex;
-      gap: 10px;
+      gap: 12px;
     }
     .sport-btn {
       background: #1f2937;
       border: none;
       color: white;
-      padding: 10px 20px;
+      padding: 10px 22px;
       border-radius: 50px;
       cursor: pointer;
       font-weight: 500;
+      transition: 0.2s;
     }
     .sport-btn.active {
       background: #3b82f6;
@@ -44,7 +47,7 @@
       background: linear-gradient(90deg, #fbbf24, #f59e0b);
       color: black;
       border: none;
-      padding: 10px 20px;
+      padding: 10px 22px;
       border-radius: 50px;
       font-weight: bold;
       cursor: pointer;
@@ -57,47 +60,63 @@
     .card {
       background: #111827;
       border-radius: 16px;
-      padding: 25px;
+      padding: 28px;
       border: 1px solid #1f2937;
     }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 20px 0;
+    }
     input, select {
-      padding: 12px;
-      border-radius: 8px;
+      padding: 12px 14px;
+      border-radius: 10px;
       border: 1px solid #374151;
       background: #1f2937;
       color: white;
-      margin: 5px;
-      width: 220px;
+      font-size: 1rem;
     }
     .analyze-btn {
       background: #10b981;
       border: none;
-      padding: 12px 25px;
-      border-radius: 8px;
+      padding: 12px 28px;
+      border-radius: 10px;
       font-weight: bold;
       cursor: pointer;
       color: white;
     }
-    #result {
-      margin-top: 25px;
+    .metrics {
+      display: flex;
+      gap: 16px;
+      margin: 20px 0;
+      flex-wrap: wrap;
     }
     .metric {
-      display: inline-block;
       background: #1f2937;
-      padding: 15px 25px;
-      border-radius: 12px;
-      margin: 10px;
+      padding: 18px 24px;
+      border-radius: 14px;
       text-align: center;
+      min-width: 140px;
     }
     .metric span {
       display: block;
-      font-size: 1.8rem;
+      font-size: 1.9rem;
       font-weight: bold;
       color: #10b981;
+      margin-top: 4px;
     }
-    .coming {
-      color: #f59e0b;
-      font-size: 0.85rem;
+    .chart-container {
+      margin-top: 25px;
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 15px;
+    }
+    .support {
+      margin-top: 40px;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 0.9rem;
     }
   </style>
 </head>
@@ -107,9 +126,9 @@
     <div class="logo">HBA BETTING</div>
     <div class="sports">
       <button class="sport-btn active">NBA</button>
-      <button class="sport-btn">Fútbol <span class="coming">(En desarrollo)</span></button>
-      <button class="sport-btn">Tenis <span class="coming">(En desarrollo)</span></button>
-      <button class="sport-btn">E-Sports <span class="coming">(En desarrollo)</span></button>
+      <button class="sport-btn">Fútbol <small style="color:#f59e0b">(En desarrollo)</small></button>
+      <button class="sport-btn">Tenis <small style="color:#f59e0b">(En desarrollo)</small></button>
+      <button class="sport-btn">E-Sports <small style="color:#f59e0b">(En desarrollo)</small></button>
     </div>
     <button class="vip-btn">VIP AI Assistant</button>
   </div>
@@ -117,29 +136,31 @@
   <div class="container">
     <div class="card">
       <h2>NBA Player Props Analyzer</h2>
-      <br>
       
-      <input type="text" id="player" placeholder="Ej: Luka Doncic" value="Luka Doncic">
-      
-      <select id="prop">
-        <option value="PTS">Puntos</option>
-        <option value="REB">Rebotes</option>
-        <option value="AST">Asistencias</option>
-        <option value="PRA">Puntos + Rebotes + Asistencias</option>
-        <option value="PR">Puntos + Rebotes</option>
-        <option value="PA">Puntos + Asistencias</option>
-        <option value="RA">Rebotes + Asistencias</option>
-        <option value="FG3M">Triples</option>
-        <option value="MIN">Minutos</option>
-        <option value="DD">Double-Double</option>
-        <option value="TD">Triple-Double</option>
-      </select>
-      
-      <select id="line"></select>
-      
-      <button class="analyze-btn" onclick="analyze()">Analizar</button>
+      <div class="controls">
+        <input type="text" id="player" placeholder="Nombre del jugador" value="Luka Doncic">
+        <select id="prop">
+          <option value="PTS">Puntos</option>
+          <option value="REB">Rebotes</option>
+          <option value="AST">Asistencias</option>
+          <option value="PRA">Puntos + Rebotes + Asistencias</option>
+          <option value="PR">Puntos + Rebotes</option>
+          <option value="PA">Puntos + Asistencias</option>
+          <option value="RA">Rebotes + Asistencias</option>
+          <option value="FG3M">Triples</option>
+          <option value="MIN">Minutos</option>
+          <option value="DD">Double-Double</option>
+          <option value="TD">Triple-Double</option>
+        </select>
+        <select id="line"></select>
+        <button class="analyze-btn" onclick="analyze()">Analizar</button>
+      </div>
 
       <div id="result"></div>
+    </div>
+
+    <div class="support">
+      ¿Dudas o soporte? Escríbenos a <b>soporte@hbabetting.com</b>
     </div>
   </div>
 
@@ -154,6 +175,8 @@
       lineSelect.appendChild(opt);
     }
 
+    let chartInstance = null;
+
     async function analyze() {
       const player = document.getElementById('player').value.trim();
       const prop = document.getElementById('prop').value;
@@ -166,12 +189,7 @@
         const response = await fetch("https://hba-backend.onrender.com/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            player: player,
-            prop: prop,
-            line: line,
-            last_n: 12
-          })
+          body: JSON.stringify({ player, prop, line, last_n: 12 })
         });
 
         const data = await response.json();
@@ -182,17 +200,47 @@
         }
 
         const s = data.stats;
+        const games = data.games || [];
+
         resultDiv.innerHTML = `
           <h3>${s.player}</h3>
-          <div class="metric">Promedio <span>${s.avg}</span></div>
-          <div class="metric">Hit Rate <span>${s.hit_rate}%</span></div>
-          <div class="metric">Partidos <span>${s.games}</span></div>
-          <p style="margin-top:15px; color:#9ca3af;">
+          <div class="metrics">
+            <div class="metric">Promedio <span>${s.avg}</span></div>
+            <div class="metric">Hit Rate <span>${s.hit_rate}%</span></div>
+            <div class="metric">Partidos <span>${s.games}</span></div>
+          </div>
+          <p style="color:#9ca3af; margin-bottom:15px;">
             Superó la línea de <b>${s.line}</b> en ${Math.round(s.hit_rate * s.games / 100)} de ${s.games} partidos.
           </p>
+          <div class="chart-container">
+            <canvas id="chart"></canvas>
+          </div>
         `;
+
+        // Gráfica
+        if (chartInstance) chartInstance.destroy();
+        const ctx = document.getElementById('chart').getContext('2d');
+        chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: games.map((_, i) => `J${i+1}`),
+            datasets: [{
+              label: s.prop,
+              data: games.map(g => g[s.value_col] || 0),
+              backgroundColor: games.map(g => g.Over ? '#10b981' : '#ef4444')
+            }]
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, grid: { color: '#1f2937' } },
+              x: { grid: { display: false } }
+            }
+          }
+        });
+
       } catch (err) {
-        resultDiv.innerHTML = `<p style="color:#ef4444">Error de conexión. Intenta de nuevo.</p>`;
+        resultDiv.innerHTML = `<p style="color:#ef4444">Error de conexión.</p>`;
       }
     }
   </script>
