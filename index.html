@@ -8,53 +8,53 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', system-ui, sans-serif;
       background: #0a0e1a;
-      color: white;
+      color: #e5e7eb;
     }
     .header {
       background: #111827;
-      padding: 16px 30px;
+      padding: 16px 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid #1f2937;
     }
     .logo {
-      font-size: 1.7rem;
-      font-weight: bold;
+      font-size: 1.65rem;
+      font-weight: 700;
       color: #fbbf24;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
     }
     .sports {
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }
     .sport-btn {
       background: #1f2937;
       border: none;
       color: white;
-      padding: 10px 22px;
-      border-radius: 50px;
+      padding: 10px 20px;
+      border-radius: 999px;
       cursor: pointer;
       font-weight: 500;
-      transition: 0.2s;
+      font-size: 0.95rem;
     }
     .sport-btn.active {
       background: #3b82f6;
     }
     .vip-btn {
       background: linear-gradient(90deg, #fbbf24, #f59e0b);
-      color: black;
+      color: #111827;
       border: none;
-      padding: 10px 22px;
-      border-radius: 50px;
-      font-weight: bold;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-weight: 700;
       cursor: pointer;
     }
     .container {
-      max-width: 1100px;
-      margin: 30px auto;
+      max-width: 1080px;
+      margin: 28px auto;
       padding: 0 20px;
     }
     .card {
@@ -67,7 +67,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      margin: 20px 0;
+      margin: 18px 0 24px;
     }
     input, select {
       padding: 12px 14px;
@@ -76,44 +76,53 @@
       background: #1f2937;
       color: white;
       font-size: 1rem;
+      min-width: 180px;
     }
     .analyze-btn {
       background: #10b981;
       border: none;
-      padding: 12px 28px;
+      padding: 12px 26px;
       border-radius: 10px;
-      font-weight: bold;
+      font-weight: 700;
       cursor: pointer;
       color: white;
     }
     .metrics {
       display: flex;
-      gap: 16px;
-      margin: 20px 0;
+      gap: 14px;
+      margin: 8px 0 18px;
       flex-wrap: wrap;
     }
     .metric {
       background: #1f2937;
-      padding: 18px 24px;
-      border-radius: 14px;
+      padding: 16px 22px;
+      border-radius: 12px;
       text-align: center;
-      min-width: 140px;
+      min-width: 130px;
     }
     .metric span {
       display: block;
-      font-size: 1.9rem;
-      font-weight: bold;
+      font-size: 1.8rem;
+      font-weight: 700;
       color: #10b981;
       margin-top: 4px;
     }
-    .chart-container {
-      margin-top: 25px;
+    .analysis {
       background: #0f172a;
       border-radius: 12px;
-      padding: 15px;
+      padding: 16px 18px;
+      margin: 16px 0;
+      border-left: 3px solid #fbbf24;
+      line-height: 1.5;
+    }
+    .chart-container {
+      margin-top: 10px;
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 14px;
     }
     .support {
-      margin-top: 40px;
+      margin-top: 36px;
       text-align: center;
       color: #9ca3af;
       font-size: 0.9rem;
@@ -160,7 +169,7 @@
     </div>
 
     <div class="support">
-      ¿Dudas o soporte? Escríbenos a <b>soporte@hbabetting.com</b>
+      ¿Dudas, quejas o soporte? Escríbenos a <b>soporte@hbabetting.com</b>
     </div>
   </div>
 
@@ -176,6 +185,23 @@
     }
 
     let chartInstance = null;
+
+    function generateAnalysis(stats) {
+      const { player, avg, hit_rate, games, line, prop } = stats;
+      const hits = Math.round((hit_rate / 100) * games);
+
+      let text = `<b>${player}</b> ha promediado <b>${avg}</b> en ${prop} en sus últimos ${games} partidos. `;
+      
+      if (hit_rate >= 70) {
+        text += `Ha superado la línea de <b>${line}</b> en <b>${hits} de ${games}</b> partidos (${hit_rate}%). Es un pick con buen respaldo reciente.`;
+      } else if (hit_rate >= 50) {
+        text += `Ha superado la línea de <b>${line}</b> en <b>${hits} de ${games}</b> partidos (${hit_rate}%). Es un pick intermedio, conviene revisar el contexto del partido.`;
+      } else {
+        text += `Solo ha superado la línea de <b>${line}</b> en <b>${hits} de ${games}</b> partidos (${hit_rate}%). El respaldo reciente es bajo.`;
+      }
+
+      return text;
+    }
 
     async function analyze() {
       const player = document.getElementById('player').value.trim();
@@ -209,15 +235,15 @@
             <div class="metric">Hit Rate <span>${s.hit_rate}%</span></div>
             <div class="metric">Partidos <span>${s.games}</span></div>
           </div>
-          <p style="color:#9ca3af; margin-bottom:15px;">
-            Superó la línea de <b>${s.line}</b> en ${Math.round(s.hit_rate * s.games / 100)} de ${s.games} partidos.
-          </p>
+          <div class="analysis">
+            <strong>Análisis del Pick</strong><br>
+            ${generateAnalysis(s)}
+          </div>
           <div class="chart-container">
             <canvas id="chart"></canvas>
           </div>
         `;
 
-        // Gráfica
         if (chartInstance) chartInstance.destroy();
         const ctx = document.getElementById('chart').getContext('2d');
         chartInstance = new Chart(ctx, {
