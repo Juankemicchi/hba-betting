@@ -9,123 +9,127 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
-      background: #0a0e1a;
+      background: #070b14;
       color: #e5e7eb;
     }
     .header {
-      background: #111827;
-      padding: 16px 28px;
+      background: #0f172a;
+      padding: 14px 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid #1f2937;
+      border-bottom: 1px solid #1e293b;
     }
     .logo {
-      font-size: 1.65rem;
+      font-size: 1.6rem;
       font-weight: 700;
       color: #fbbf24;
-      letter-spacing: 0.5px;
     }
     .sports {
       display: flex;
-      gap: 10px;
+      gap: 8px;
     }
     .sport-btn {
-      background: #1f2937;
+      background: #1e293b;
       border: none;
       color: white;
-      padding: 10px 20px;
+      padding: 8px 16px;
       border-radius: 999px;
       cursor: pointer;
-      font-weight: 500;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
     }
     .sport-btn.active {
       background: #3b82f6;
     }
     .vip-btn {
       background: linear-gradient(90deg, #fbbf24, #f59e0b);
-      color: #111827;
+      color: #0f172a;
       border: none;
-      padding: 10px 20px;
+      padding: 8px 16px;
       border-radius: 999px;
       font-weight: 700;
+      font-size: 0.9rem;
       cursor: pointer;
     }
     .container {
-      max-width: 1080px;
-      margin: 28px auto;
+      max-width: 1200px;
+      margin: 24px auto;
       padding: 0 20px;
     }
     .card {
-      background: #111827;
+      background: #0f172a;
       border-radius: 16px;
-      padding: 28px;
-      border: 1px solid #1f2937;
+      padding: 24px;
+      border: 1px solid #1e293b;
     }
     .controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin: 18px 0 24px;
+      gap: 10px;
+      margin: 16px 0 20px;
     }
     input, select {
-      padding: 12px 14px;
-      border-radius: 10px;
-      border: 1px solid #374151;
-      background: #1f2937;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #1e293b;
       color: white;
-      font-size: 1rem;
-      min-width: 180px;
     }
     .analyze-btn {
       background: #10b981;
       border: none;
-      padding: 12px 26px;
-      border-radius: 10px;
+      padding: 10px 22px;
+      border-radius: 8px;
       font-weight: 700;
-      cursor: pointer;
       color: white;
+      cursor: pointer;
     }
-    .metrics {
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 18px;
+      margin-top: 10px;
+    }
+    .metrics-row {
       display: flex;
-      gap: 14px;
-      margin: 8px 0 18px;
-      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
     }
     .metric {
-      background: #1f2937;
-      padding: 16px 22px;
+      background: #1e293b;
+      padding: 14px 18px;
       border-radius: 12px;
+      flex: 1;
       text-align: center;
-      min-width: 130px;
     }
     .metric span {
       display: block;
-      font-size: 1.8rem;
+      font-size: 1.7rem;
       font-weight: 700;
       color: #10b981;
-      margin-top: 4px;
     }
     .analysis {
-      background: #0f172a;
+      background: #1e293b;
       border-radius: 12px;
-      padding: 16px 18px;
-      margin: 16px 0;
+      padding: 14px 16px;
+      margin-bottom: 16px;
       border-left: 3px solid #fbbf24;
-      line-height: 1.5;
     }
-    .chart-container {
-      margin-top: 10px;
-      background: #0f172a;
+    .chart-box {
+      background: #1e293b;
       border-radius: 12px;
-      padding: 14px;
+      padding: 12px;
+    }
+    .side-panel {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
     }
     .support {
-      margin-top: 36px;
+      margin-top: 28px;
       text-align: center;
-      color: #9ca3af;
-      font-size: 0.9rem;
+      color: #94a3b8;
+      font-size: 0.85rem;
     }
   </style>
 </head>
@@ -135,27 +139,27 @@
     <div class="logo">HBA BETTING</div>
     <div class="sports">
       <button class="sport-btn active">NBA</button>
-      <button class="sport-btn">Fútbol <small style="color:#f59e0b">(En desarrollo)</small></button>
-      <button class="sport-btn">Tenis <small style="color:#f59e0b">(En desarrollo)</small></button>
-      <button class="sport-btn">E-Sports <small style="color:#f59e0b">(En desarrollo)</small></button>
+      <button class="sport-btn">Fútbol</button>
+      <button class="sport-btn">Tenis</button>
+      <button class="sport-btn">E-Sports</button>
     </div>
     <button class="vip-btn">VIP AI Assistant</button>
   </div>
 
   <div class="container">
     <div class="card">
-      <h2>NBA Player Props Analyzer</h2>
+      <h2>NBA Player Props</h2>
       
       <div class="controls">
-        <input type="text" id="player" placeholder="Nombre del jugador" value="Luka Doncic">
+        <input type="text" id="player" placeholder="Jugador" value="Luka Doncic">
         <select id="prop">
           <option value="PTS">Puntos</option>
           <option value="REB">Rebotes</option>
           <option value="AST">Asistencias</option>
-          <option value="PRA">Puntos + Rebotes + Asistencias</option>
-          <option value="PR">Puntos + Rebotes</option>
-          <option value="PA">Puntos + Asistencias</option>
-          <option value="RA">Rebotes + Asistencias</option>
+          <option value="PRA">PRA</option>
+          <option value="PR">PR</option>
+          <option value="PA">PA</option>
+          <option value="RA">RA</option>
           <option value="FG3M">Triples</option>
           <option value="MIN">Minutos</option>
           <option value="DD">Double-Double</option>
@@ -169,7 +173,7 @@
     </div>
 
     <div class="support">
-      ¿Dudas, quejas o soporte? Escríbenos a <b>soporte@hbabetting.com</b>
+      Soporte: <b>soporte@hbabetting.com</b>
     </div>
   </div>
 
@@ -190,17 +194,13 @@
       const { player, avg, hit_rate, games, line, prop } = stats;
       const hits = Math.round((hit_rate / 100) * games);
 
-      let text = `<b>${player}</b> ha promediado <b>${avg}</b> en ${prop} en sus últimos ${games} partidos. `;
-      
       if (hit_rate >= 70) {
-        text += `Ha superado la línea de <b>${line}</b> en <b>${hits} de ${games}</b> partidos (${hit_rate}%). Es un pick con buen respaldo reciente.`;
+        return `${player} ha promediado <b>${avg}</b> en ${prop}. Ha superado la línea de <b>${line}</b> en <b>${hits} de ${games}</b> partidos (${hit_rate}%). Pick con buen respaldo reciente.`;
       } else if (hit_rate >= 50) {
-        text += `Ha superado la línea de <b>${line}</b> en <b>${hits} de ${games}</b> partidos (${hit_rate}%). Es un pick intermedio, conviene revisar el contexto del partido.`;
+        return `${player} ha promediado <b>${avg}</b> en ${prop}. Ha superado la línea de <b>${line}</b> en <b>${hits} de ${games}</b> partidos (${hit_rate}%). Pick intermedio.`;
       } else {
-        text += `Solo ha superado la línea de <b>${line}</b> en <b>${hits} de ${games}</b> partidos (${hit_rate}%). El respaldo reciente es bajo.`;
+        return `${player} ha promediado <b>${avg}</b> en ${prop}. Solo ha superado la línea de <b>${line}</b> en <b>${hits} de ${games}</b> partidos (${hit_rate}%). Respaldo reciente bajo.`;
       }
-
-      return text;
     }
 
     async function analyze() {
@@ -229,18 +229,27 @@
         const games = data.games || [];
 
         resultDiv.innerHTML = `
-          <h3>${s.player}</h3>
-          <div class="metrics">
-            <div class="metric">Promedio <span>${s.avg}</span></div>
-            <div class="metric">Hit Rate <span>${s.hit_rate}%</span></div>
-            <div class="metric">Partidos <span>${s.games}</span></div>
-          </div>
-          <div class="analysis">
-            <strong>Análisis del Pick</strong><br>
-            ${generateAnalysis(s)}
-          </div>
-          <div class="chart-container">
-            <canvas id="chart"></canvas>
+          <div class="dashboard">
+            <div>
+              <div class="metrics-row">
+                <div class="metric">Promedio <span>${s.avg}</span></div>
+                <div class="metric">Hit Rate <span>${s.hit_rate}%</span></div>
+                <div class="metric">Partidos <span>${s.games}</span></div>
+              </div>
+              <div class="analysis">
+                <strong>Análisis del Pick</strong><br>
+                ${generateAnalysis(s)}
+              </div>
+              <div class="chart-box">
+                <canvas id="chart"></canvas>
+              </div>
+            </div>
+            <div class="side-panel">
+              <h4 style="margin-bottom:10px;">Resumen</h4>
+              <p style="font-size:0.9rem; color:#94a3b8;">Línea: <b>${s.line}</b></p>
+              <p style="font-size:0.9rem; color:#94a3b8; margin-top:6px;">Prop: <b>${s.prop}</b></p>
+              <p style="margin-top:14px; font-size:0.85rem;">Verde = Superó la línea<br>Rojo = No la superó</p>
+            </div>
           </div>
         `;
 
@@ -251,7 +260,6 @@
           data: {
             labels: games.map((_, i) => `J${i+1}`),
             datasets: [{
-              label: s.prop,
               data: games.map(g => g[s.value_col] || 0),
               backgroundColor: games.map(g => g.Over ? '#10b981' : '#ef4444')
             }]
@@ -259,7 +267,7 @@
           options: {
             plugins: { legend: { display: false } },
             scales: {
-              y: { beginAtZero: true, grid: { color: '#1f2937' } },
+              y: { beginAtZero: true, grid: { color: '#334155' } },
               x: { grid: { display: false } }
             }
           }
