@@ -26,6 +26,9 @@
     .chart-box { background: #1e293b; border-radius: 12px; padding: 12px; }
     .side-panel { background: #1e293b; border-radius: 12px; padding: 16px; }
     .support { margin-top: 28px; text-align: center; color: #94a3b8; font-size: 0.85rem; }
+    .mode-selector { display: flex; gap: 8px; margin-bottom: 16px; }
+    .mode-btn { background: #1e293b; border: none; color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+    .mode-btn.active { background: #10b981; }
   </style>
 </head>
 <body>
@@ -33,17 +36,17 @@
   <div class="header">
     <div class="logo">HBA BETTING</div>
     <div class="sports">
-      <button class="sport-btn active">🏀 NBA</button>
-      <button class="sport-btn">⚽ Fútbol <span style="font-size:0.75rem; opacity:0.7;">(en desarrollo)</span></button>
+      <button class="sport-btn active" onclick="showSport('nba')">🏀 NBA</button>
+      <button class="sport-btn" onclick="showSport('football')">⚽ Fútbol</button>
       <button class="sport-btn">🎾 Tenis <span style="font-size:0.75rem; opacity:0.7;">(en desarrollo)</span></button>
       <button class="sport-btn">🎮 E-Sports <span style="font-size:0.75rem; opacity:0.7;">(en desarrollo)</span></button>
     </div>
   </div>
 
   <div class="container">
-    <div class="card">
+    <!-- NBA Section -->
+    <div id="nba-section" class="card">
       <h2>NBA Player Props</h2>
-      
       <div class="controls">
         <input type="text" id="player" placeholder="Jugador" value="Luka Doncic">
         <select id="prop">
@@ -60,10 +63,24 @@
           <option value="TD">Triple-Double</option>
         </select>
         <select id="line"></select>
-        <button class="analyze-btn" onclick="analyze()">Analizar</button>
+        <button class="analyze-btn" onclick="analyzeNBA()">Analizar</button>
       </div>
+      <div id="nba-result"></div>
+    </div>
 
-      <div id="result"></div>
+    <!-- Football Section -->
+    <div id="football-section" class="card" style="display:none;">
+      <h2>Fútbol</h2>
+      <div class="mode-selector">
+        <button class="mode-btn active" onclick="setFootballMode('team')">Equipos</button>
+        <button class="mode-btn" onclick="setFootballMode('player')">Jugadores</button>
+      </div>
+      <div class="controls">
+        <input type="text" id="ft-team" placeholder="Equipo (ej: Barcelona)" value="Barcelona">
+        <input type="text" id="ft-team2" placeholder="Rival (para H2H)" value="Real Madrid" style="display:none;">
+        <button class="analyze-btn" onclick="analyzeFootball()">Analizar</button>
+      </div>
+      <div id="football-result"></div>
     </div>
 
     <div class="support">Soporte: <b>soporte@hbabetting.com</b></div>
@@ -81,12 +98,28 @@
     }
 
     let chartInstance = null;
+    let footballMode = 'team';
 
-    async function analyze() {
+    function showSport(sport) {
+      document.querySelectorAll('.sport-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      document.getElementById('nba-section').style.display = sport === 'nba' ? 'block' : 'none';
+      document.getElementById('football-section').style.display = sport === 'football' ? 'block' : 'none';
+    }
+
+    function setFootballMode(mode) {
+      footballMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('ft-team2').style.display = mode === 'team' ? 'block' : 'none';
+    }
+
+    async function analyzeNBA() {
       const player = document.getElementById('player').value.trim();
       const prop = document.getElementById('prop').value;
       const line = parseFloat(document.getElementById('line').value);
-      const resultDiv = document.getElementById('result');
+      const resultDiv = document.getElementById('nba-result');
 
       resultDiv.innerHTML = "<p>Analizando...</p>";
 
@@ -156,6 +189,47 @@
           }
         });
 
+      } catch (err) {
+        resultDiv.innerHTML = `<p style="color:#ef4444">Error de conexión.</p>`;
+      }
+    }
+
+    async function analyzeFootball() {
+      const team = document.getElementById('ft-team').value.trim();
+      const team2 = document.getElementById('ft-team2').value.trim();
+      const resultDiv = document.getElementById('football-result');
+
+      resultDiv.innerHTML = "<p>Analizando...</p>";
+
+      try {
+        let url, body;
+        if (footballMode === 'team' && team2) {
+          url = "https://hba-backend.onrender.com/football/h2h";
+          body = { team1: team, team2: team2, last: 10 };
+        } else {
+          url = "https://hba-backend.onrender.com/football/team";
+          body = { team: team };
+        }
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          resultDiv.innerHTML = `<p style="color:#ef4444">${data.detail}</p>`;
+          return;
+        }
+
+        resultDiv.innerHTML = `
+          <div class="analysis">
+            <strong>Datos de ${team}</strong><br>
+            <pre style="white-space:pre-wrap; font-size:0.85rem;">${JSON.stringify(data, null, 2)}</pre>
+          </div>
+        `;
       } catch (err) {
         resultDiv.innerHTML = `<p style="color:#ef4444">Error de conexión.</p>`;
       }
