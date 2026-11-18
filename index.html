@@ -142,6 +142,8 @@
     .vip-pick { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 14px 12px; margin-bottom: 10px; }
     .vip-pick-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
     .vip-rank { color: var(--gold); font-weight: 800; font-size: .75rem; letter-spacing: .08em; }
+    .vip-pick.maxima { border-color: var(--gold); }
+    .vip-maxima { display: inline-block; margin-left: 8px; background: linear-gradient(90deg, #c9a227, #f0d78c); color: #1a1408; font-weight: 800; font-size: .68rem; letter-spacing: .04em; padding: 3px 8px; border-radius: 8px; text-transform: uppercase; vertical-align: middle; }
     .vip-match { font-weight: 700; }
     .vip-meta { color: var(--muted); font-size: .75rem; margin: 2px 0 8px; }
     .vip-market { font-size: .92rem; margin-bottom: 6px; }
@@ -1263,9 +1265,9 @@ async function loadVipPicks() {
     return;
   }
   list.innerHTML = data.picks.map(p => `
-    <article class="vip-pick">
+    <article class="vip-pick${p.maxima_confianza ? " maxima" : ""}">
       <div class="vip-pick-top">
-        <div class="vip-rank">PICK ${p.rank}</div>
+        <div class="vip-rank">PICK ${p.rank}${p.maxima_confianza ? ' <span class="vip-maxima">Máxima confianza</span>' : ""}</div>
         <div class="risk-${p.risk || "media"}">${(p.risk || "").toUpperCase()} riesgo</div>
       </div>
       <div class="vip-match">${p.match || p.entity || ""}</div>
