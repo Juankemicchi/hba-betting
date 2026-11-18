@@ -29,6 +29,25 @@
     .mode-selector { display: flex; gap: 8px; margin-bottom: 16px; }
     .mode-btn { background: #1e293b; border: none; color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
     .mode-btn.active { background: #10b981; }
+    .hint { color: #94a3b8; font-size: 0.85rem; margin: 8px 0; }
+    .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+    .team-card { background: #1e293b; border-radius: 12px; padding: 14px 10px; text-align: center; cursor: pointer; border: 1px solid #334155; }
+    .team-card:hover, .team-card.active { border-color: #3b82f6; }
+    .team-card img { width: 56px; height: 56px; object-fit: contain; margin-bottom: 8px; }
+    .team-card strong { display: block; font-size: 0.9rem; }
+    .team-card span { display: block; font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
+    .player-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 12px; }
+    .player-card { background: #1e293b; border-radius: 10px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; }
+    .player-card img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #0f172a; }
+    .player-card .meta { font-size: 0.75rem; color: #94a3b8; }
+    .match-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #1e293b; border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; font-size: 0.9rem; }
+    .match-row img { width: 24px; height: 24px; object-fit: contain; }
+    .score { font-weight: 700; color: #fbbf24; min-width: 48px; text-align: center; }
+    .league-hit { display: flex; align-items: center; gap: 8px; background: #1e293b; border-radius: 8px; padding: 8px 12px; margin: 6px 0; cursor: pointer; border: 1px solid #334155; }
+    .league-hit:hover { border-color: #3b82f6; }
+    .league-hit img { width: 24px; height: 24px; object-fit: contain; }
+    #ft-league { min-width: 240px; }
+
   </style>
 </head>
 <body>
@@ -72,14 +91,21 @@
     <div id="football-section" class="card" style="display:none;">
       <h2>Fútbol</h2>
       <div class="mode-selector">
-        <button class="mode-btn active" onclick="setFootballMode('team')">Equipos</button>
-        <button class="mode-btn" onclick="setFootballMode('player')">Jugadores</button>
+        <button class="mode-btn active" onclick="setFootballMode('teams')">Equipos</button>
+        <button class="mode-btn" onclick="setFootballMode('players')">Jugadores</button>
+        <button class="mode-btn" onclick="setFootballMode('h2h')">H2H</button>
       </div>
       <div class="controls">
-        <input type="text" id="ft-team" placeholder="Equipo (ej: Barcelona)" value="Barcelona">
-        <input type="text" id="ft-team2" placeholder="Rival (para H2H)" value="Real Madrid" style="display:none;">
+        <select id="ft-league" onchange="onLeagueChange()">
+        </select>
+        <input type="text" id="ft-league-search" placeholder="Buscar otra liga..." onkeydown="if(event.key==='Enter')searchLeagues()">
+        <button class="sport-btn" onclick="searchLeagues()">Buscar liga</button>
+        <span id="ft-season-label" class="hint" style="margin:0;align-self:center;"></span>
+        <input type="text" id="ft-team" placeholder="Equipo (ej: Millonarios)" value="Millonarios">
+        <input type="text" id="ft-team2" placeholder="Rival (ej: Nacional)" value="Atletico Nacional" style="display:none;">
         <button class="analyze-btn" onclick="analyzeFootball()">Analizar</button>
       </div>
+      <div id="ft-league-results"></div>
       <div id="football-result"></div>
     </div>
 
@@ -87,6 +113,22 @@
   </div>
 
   <script>
+    const API_BASE = "https://hba-backend.onrender.com";
+    const DEFAULT_LEAGUE = 239;
+    const POPULAR_LEAGUES = [
+      { id: 239, name: "Liga BetPlay (Primera A)", country: "Colombia" },
+      { id: 39, name: "Premier League", country: "Inglaterra" },
+      { id: 140, name: "La Liga", country: "España" },
+      { id: 135, name: "Serie A", country: "Italia" },
+      { id: 78, name: "Bundesliga", country: "Alemania" },
+      { id: 61, name: "Ligue 1", country: "Francia" },
+      { id: 128, name: "Liga Profesional", country: "Argentina" },
+      { id: 71, name: "Brasileirão (Serie A)", country: "Brasil" },
+      { id: 262, name: "Liga MX", country: "México" },
+      { id: 253, name: "MLS", country: "EE. UU." },
+      { id: 2, name: "Champions League", country: "Europa" },
+      { id: 13, name: "Copa Libertadores", country: "Sudamérica" }
+    ];
     const lineSelect = document.getElementById('line');
     for (let i = 0; i < 100; i++) {
       const val = (i + 0.5).toFixed(1);
@@ -98,7 +140,72 @@
     }
 
     let chartInstance = null;
-    let footballMode = 'team';
+    let footballMode = 'teams';
+    let cachedTeams = [];
+    let currentSeason = null;
+    let extraLeagues = [];
+
+    function fillLeagueSelect(selectedId) {
+      const sel = document.getElementById('ft-league');
+      const current = selectedId || Number(sel.value) || DEFAULT_LEAGUE;
+      const all = [...POPULAR_LEAGUES];
+      extraLeagues.forEach(lg => {
+        if (!all.some(p => p.id === lg.id)) all.push(lg);
+      });
+      sel.innerHTML = all.map(lg =>
+        `<option value="${lg.id}" ${lg.id === current ? 'selected' : ''}>${lg.name} — ${lg.country}</option>`
+      ).join('');
+    }
+
+    function selectedLeague() {
+      return Number(document.getElementById('ft-league').value) || DEFAULT_LEAGUE;
+    }
+
+    function onLeagueChange() {
+      currentSeason = null;
+      cachedTeams = [];
+      document.getElementById('ft-league-results').innerHTML = "";
+      analyzeFootball();
+    }
+
+    async function searchLeagues() {
+      const q = document.getElementById('ft-league-search').value.trim();
+      const box = document.getElementById('ft-league-results');
+      if (!q) { box.innerHTML = ""; return; }
+      box.innerHTML = "<p class='hint'>Buscando ligas...</p>";
+      try {
+        const response = await fetch(`${API_BASE}/api/football/leagues?search=${encodeURIComponent(q)}`);
+        const data = await response.json();
+        if (!response.ok) {
+          box.innerHTML = `<p style="color:#ef4444">${data.detail}</p>`;
+          return;
+        }
+        const leagues = data.leagues || [];
+        if (!leagues.length) {
+          box.innerHTML = "<p class='hint'>No se encontraron ligas.</p>";
+          return;
+        }
+        box.innerHTML = leagues.slice(0, 12).map(lg =>
+          `<div class="league-hit" onclick="pickLeague(${lg.id}, '${(lg.name || '').replace(/"/g, '&quot;')}', '${(lg.country || '').replace(/"/g, '&quot;')}')">
+            ${lg.logo ? `<img src="${lg.logo}" alt="">` : ""}
+            <div><strong>${lg.name}</strong><div class="meta" style="font-size:0.75rem;color:#94a3b8;">${lg.country || ""} · temporada ${lg.season || ""}</div></div>
+          </div>`
+        ).join('');
+      } catch (err) {
+        box.innerHTML = `<p style="color:#ef4444">Error de conexión.</p>`;
+      }
+    }
+
+    function pickLeague(id, name, country) {
+      extraLeagues = extraLeagues.filter(l => l.id !== id);
+      extraLeagues.unshift({ id, name, country });
+      fillLeagueSelect(id);
+      document.getElementById('ft-league-results').innerHTML = "";
+      document.getElementById('ft-league-search').value = "";
+      onLeagueChange();
+    }
+
+    fillLeagueSelect(DEFAULT_LEAGUE);
 
     function showSport(sport) {
       document.querySelectorAll('.sport-btn').forEach(btn => btn.classList.remove('active'));
@@ -106,13 +213,74 @@
       
       document.getElementById('nba-section').style.display = sport === 'nba' ? 'block' : 'none';
       document.getElementById('football-section').style.display = sport === 'football' ? 'block' : 'none';
+      if (sport === 'football') analyzeFootball();
     }
 
     function setFootballMode(mode) {
       footballMode = mode;
       document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
       event.target.classList.add('active');
-      document.getElementById('ft-team2').style.display = mode === 'team' ? 'block' : 'none';
+      document.getElementById('ft-team2').style.display = mode === 'h2h' ? 'block' : 'none';
+      analyzeFootball();
+    }
+
+
+    function renderTeams(teams, selectedId) {
+      if (!teams.length) return `<p class="hint">No se encontraron equipos.</p>`;
+      return `<div class="team-grid">` + teams.map(t => `
+        <div class="team-card${t.id === selectedId ? ' active' : ''}" onclick="loadSquad(${t.id})">
+          ${t.logo ? `<img src="${t.logo}" alt="${t.name}">` : ''}
+          <strong>${t.name}</strong>
+          <span>${t.venue && t.venue.name ? t.venue.name : (t.code || '')}</span>
+        </div>
+      `).join('') + `</div>`;
+    }
+
+    function renderPlayers(players) {
+      if (!players.length) return `<p class="hint">No se encontraron jugadores.</p>`;
+      const order = { Goalkeeper: 1, Defender: 2, Midfielder: 3, Attacker: 4 };
+      const labels = { Goalkeeper: 'Portero', Defender: 'Defensa', Midfielder: 'Volante', Attacker: 'Delantero' };
+      const sorted = [...players].sort((a, b) => (order[a.position] || 9) - (order[b.position] || 9));
+      return `<div class="player-list">` + sorted.map(p => `
+        <div class="player-card">
+          ${p.photo ? `<img src="${p.photo}" alt="${p.name}">` : ''}
+          <div>
+            <strong>${p.number != null ? p.number + '. ' : ''}${p.name}</strong>
+            <div class="meta">${labels[p.position] || p.position || ''}${p.age ? ' · ' + p.age + ' años' : ''}</div>
+          </div>
+        </div>
+      `).join('') + `</div>`;
+    }
+
+    function renderMatches(matches) {
+      if (!matches.length) return `<p class="hint">No se encontró historial.</p>`;
+      return matches.map(m => {
+        const date = m.date ? new Date(m.date).toLocaleDateString('es-CO') : '';
+        return `<div class="match-row">
+          <span>${m.home_logo ? `<img src="${m.home_logo}" alt=""> ` : ''}${m.home || ''}</span>
+          <span class="score">${m.goals_home ?? '-'} : ${m.goals_away ?? '-'}</span>
+          <span>${m.away || ''}${m.away_logo ? ` <img src="${m.away_logo}" alt="">` : ''}</span>
+        </div><p class="hint" style="margin-top:-4px;margin-bottom:10px;">${date}${m.league ? ' · ' + m.league : ''}</p>`;
+      }).join('');
+    }
+
+    async function loadSquad(teamId, teamName) {
+      teamName = teamName || (cachedTeams.find(t => t.id === teamId) || {}).name || 'el equipo';
+      const resultDiv = document.getElementById('football-result');
+      const teamsHtml = renderTeams(cachedTeams, teamId);
+      resultDiv.innerHTML = teamsHtml + `<p>Cargando plantilla de ${teamName}...</p>`;
+      try {
+        const response = await fetch(`${API_BASE}/api/football/squad?team=${teamId}`);
+        const data = await response.json();
+        if (!response.ok) {
+          resultDiv.innerHTML = teamsHtml + `<p style="color:#ef4444">${data.detail}</p>`;
+          return;
+        }
+        const name = (data.team && data.team.name) || teamName;
+        resultDiv.innerHTML = teamsHtml + `<div class="analysis" style="margin-top:16px;"><strong>Plantilla de ${name}</strong></div>` + renderPlayers(data.players || []);
+      } catch (err) {
+        resultDiv.innerHTML = teamsHtml + `<p style="color:#ef4444">Error de conexión.</p>`;
+      }
     }
 
     async function analyzeNBA() {
@@ -124,7 +292,7 @@
       resultDiv.innerHTML = "<p>Analizando...</p>";
 
       try {
-        const response = await fetch("https://hba-backend.onrender.com/analyze", {
+        const response = await fetch(`${API_BASE}/analyze`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ player, prop, line, last_n: 12 })
@@ -194,42 +362,90 @@
       }
     }
 
+    function renderAnalysis(text) {
+      if (!text) return "";
+      return `<div class="analysis"><strong>Análisis del Pick</strong><br>${text}</div>`;
+    }
+
+    function renderStanding(st) {
+      if (!st) return "";
+      return `<p class="hint">Tabla: puesto ${st.rank || "-"} · ${st.points ?? "-"} pts · racha ${st.form || "-"} · ${st.played ?? "-"} PJ (${st.win ?? "-"}W-${st.draw ?? "-"}E-${st.lose ?? "-"}D)</p>`;
+    }
+
     async function analyzeFootball() {
       const team = document.getElementById('ft-team').value.trim();
       const team2 = document.getElementById('ft-team2').value.trim();
       const resultDiv = document.getElementById('football-result');
+      const league = selectedLeague();
 
-      resultDiv.innerHTML = "<p>Analizando...</p>";
+      resultDiv.innerHTML = "<p>Cargando... Si el servidor estaba dormido, puede tardar unos segundos.</p>";
 
       try {
-        let url, body;
-        if (footballMode === 'team' && team2) {
-          url = "https://hba-backend.onrender.com/football/h2h";
-          body = { team1: team, team2: team2, last: 10 };
-        } else {
-          url = "https://hba-backend.onrender.com/football/team";
-          body = { team: team };
+        if (footballMode === 'h2h') {
+          const response = await fetch(`${API_BASE}/football/h2h`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ team1: team, team2: team2, last: 10, league })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            resultDiv.innerHTML = `<p style="color:#ef4444">${data.detail}</p>`;
+            return;
+          }
+          const s1 = data.team1_data && data.team1_data.standing;
+          const s2 = data.team2_data && data.team2_data.standing;
+          resultDiv.innerHTML = `<div class="analysis"><strong>${team} vs ${team2}</strong></div>`
+            + renderStanding(s1) + renderStanding(s2)
+            + renderAnalysis(data.ai_analysis)
+            + renderMatches(data.matches || []);
+          return;
         }
 
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body)
-        });
+        if (footballMode === 'players' && team) {
+          const response = await fetch(`${API_BASE}/football/team`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ team, league })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            resultDiv.innerHTML = `<p style="color:#ef4444">${data.detail}</p>`;
+            return;
+          }
+          const stats = data.stats || {};
+          const t = stats.team || {};
+          const season = stats.season ? ` · temporada ${stats.season}` : "";
+          const leagueName = (stats.league && stats.league.name) ? stats.league.name : "";
+          resultDiv.innerHTML = `<div class="analysis"><strong>${t.name || team}</strong> — ${leagueName}${season}</div>`
+            + renderStanding(stats.standing)
+            + renderAnalysis(data.ai_analysis)
+            + renderPlayers(stats.squad || []);
+          return;
+        }
 
+        const response = await fetch(`${API_BASE}/api/football/teams?league=${league}`);
         const data = await response.json();
-
         if (!response.ok) {
           resultDiv.innerHTML = `<p style="color:#ef4444">${data.detail}</p>`;
           return;
         }
 
-        resultDiv.innerHTML = `
-          <div class="analysis">
-            <strong>Datos de ${team}</strong><br>
-            <pre style="white-space:pre-wrap; font-size:0.85rem;">${JSON.stringify(data, null, 2)}</pre>
-          </div>
-        `;
+        cachedTeams = data.teams || [];
+        currentSeason = data.season;
+        const label = document.getElementById('ft-season-label');
+        if (label) {
+          const lg = data.league_name || "";
+          label.textContent = `${lg}${data.season ? " · temporada " + data.season : ""}`;
+        }
+
+        let selected = null;
+        if (team) {
+          const q = team.toLowerCase();
+          selected = cachedTeams.find(t => (t.name || '').toLowerCase().includes(q) || (t.code || '').toLowerCase() === q) || null;
+        }
+
+        resultDiv.innerHTML = renderTeams(cachedTeams, selected && selected.id);
+        if (selected) await loadSquad(selected.id, selected.name);
       } catch (err) {
         resultDiv.innerHTML = `<p style="color:#ef4444">Error de conexión.</p>`;
       }
