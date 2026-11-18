@@ -612,6 +612,29 @@ function recomputeMarket(stat, line) {
   return { ...stat, line: snapped, values, hits, games, avg, hit_rate: games ? Math.round(hits * 1000 / games) / 10 : null };
 }
 
+function clientRecommend(market) {
+  if (!market || !market.games) return { lean: "NEUTRAL", confidence: 1 };
+  const hit = market.hit_rate;
+  const games = market.games;
+  const avg = market.avg;
+  const line = market.line;
+  let lean;
+  if (market.kind === "yesno") {
+    const yesRate = market.yes_rate;
+    if (yesRate >= 65) lean = "SI";
+    else if (yesRate <= 35) lean = "NO";
+    else lean = "NEUTRAL";
+  } else if (hit >= 65 && avg != null && avg > line) lean = "OVER";
+  else if (hit <= 35 && avg != null && avg < line) lean = "UNDER";
+  else lean = "NEUTRAL";
+  let conf;
+  if (games < 5) conf = 2;
+  else if (lean === "NEUTRAL") conf = (hit >= 45 && hit <= 55) ? 3 : 2;
+  else if ((hit >= 75 && games >= 8) || (market.kind === "yesno" && (market.yes_rate >= 75 || market.yes_rate <= 25) && games >= 8)) conf = 5;
+  else if (hit >= 65 || hit <= 35) conf = 4;
+  else conf = 3;
+  return { lean, confidence: conf, market: market.key, label: market.label, line: market.kind === "yesno" ? (market.side || market.line) : line, hit_rate: hit, avg };
+}
 function activeMarket() {
   if (!dashState || !dashState.payload) return null;
   const stats = dashState.payload.stats || {};
@@ -640,14 +663,15 @@ function renderFromState() {
   const data = dashState.payload;
   const stats = data.stats || {};
   const market = activeMarket();
-  const rec = data.recommendation || {};
+  const rec = clientRecommend(market) || data.recommendation || {};
   const isPlayer = dashState.kind === "player" || dashState.kind === "nba";
   const isYesNo = market && market.kind === "yesno";
   const person = isPlayer ? (data.player || {}) : (data.team || {});
   const photo = isPlayer ? person.photo : person.logo;
   const title = isPlayer ? (person.fullname || person.name) : person.name;
+  const teamName = (data.team && data.team.name) || person.team_name || "";
   const sub = isPlayer
-    ? `${(data.team && data.team.name) || ""} · ${person.position || ""} · ${data.played || 0} partidos`
+    ? [teamName, person.position, `${data.played || 0} partidos`].filter(Boolean).join(" · ")
     : `${(data.league && data.league.name) || ""} · temporada ${data.season || ""} · ${data.form || ""}`;
   const pct = market && market.hit_rate;
   const lineTxt = market
@@ -656,8 +680,8 @@ function renderFromState() {
   const leanRaw = (rec.lean || "NEUTRAL");
   const lean = leanRaw === "SÍ" ? "SI" : leanRaw;
   const leanPretty = lean === "SI" ? "SÍ" : lean;
-  const leanLine = isYesNo ? sideLabel(market.side || market.line) : (market ? market.line : "");
-  const leanLabel = market ? `${leanPretty} ${leanLine} ${market.label}` : leanPretty;
+  const leanLine = isYesNo ? "" : (market ? market.line : "");
+  const leanLabel = market ? `${leanPretty}${leanLine !== "" ? " " + leanLine : ""} ${market.label}` : leanPretty;
 
   const formHint = !isPlayer && data.record
     ? `${data.record.wins}W-${data.record.draws}E-${data.record.losses}D`
