@@ -89,13 +89,20 @@
     .lean.UNDER { background: rgba(255,77,106,.12); color: var(--red); }
     .lean.NEUTRAL { background: #1e2d4d; color: var(--muted); }
     .rows { display: flex; flex-direction: column; gap: 6px; }
-    .prop { display: grid; grid-template-columns: minmax(110px,1.3fr) 70px 64px 58px 72px; gap: 8px; align-items: center; padding: 8px 8px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; }
+    .prop { display: grid; grid-template-columns: minmax(110px,1.3fr) 78px 96px 58px 72px; gap: 8px; align-items: center; padding: 8px 8px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; }
     .prop:hover, .prop.active { background: var(--card2); border-color: var(--border); }
     .prop .name { font-size: .85rem; }
     .prop .avg, .prop .line, .prop .pct { font-size: .8rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
     .prop .pct.hot { color: var(--green); font-weight: 700; }
     .prop .pct.cold { color: var(--red); font-weight: 700; }
     .prop input { width: 64px; background: #0b1020; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 4px 6px; }
+    .step { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: #0b1020; }
+    .step button { width: 22px; height: 26px; border: 0; background: transparent; color: var(--text); cursor: pointer; font-size: .95rem; }
+    .step button:hover { background: #1e2d4d; }
+    .step span { min-width: 34px; text-align: center; font-size: .8rem; font-variant-numeric: tabular-nums; }
+    .seg.yesno button { padding: 5px 10px; font-size: .78rem; }
+    .lean.SI { background: rgba(46,229,157,.12); color: var(--green); }
+    .lean.NO { background: rgba(255,77,106,.12); color: var(--red); }
     table { width: 100%; border-collapse: collapse; font-size: .82rem; }
     th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
     th { color: var(--muted); font-weight: 600; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; }
@@ -114,8 +121,8 @@
     @media (max-width: 900px) {
       .dash { grid-template-columns: 1fr; }
       .topbar { flex-direction: column; align-items: flex-start; }
-      .prop { grid-template-columns: 1fr auto; }
-      .prop .spark, .prop .line { display: none; }
+      .prop { grid-template-columns: 1fr auto auto; }
+      .prop .spark { display: none; }
     }
   </style>
 </head>
@@ -139,34 +146,12 @@
   <main>
     <div class="search-wrap" id="ft-search-wrap">
       <span class="search-icon">⌕</span>
-      <input id="main-search" placeholder="Busca un equipo o jugador (Millonarios, Falcao, Arsenal, Saka…)" autocomplete="off">
+      <input id="main-search" placeholder="Busca un equipo o jugador" autocomplete="off">
       <div class="suggest" id="suggest"></div>
     </div>
     <div class="chips" id="chips"></div>
 
-    <div id="nba-controls" class="toolbar hidden">
-      <input id="nba-player" placeholder="Jugador" value="Luka Doncic">
-      <select id="nba-prop">
-        <option value="PTS">Puntos</option>
-        <option value="REB">Rebotes</option>
-        <option value="AST">Asistencias</option>
-        <option value="PRA">PRA</option>
-        <option value="PR">PR</option>
-        <option value="PA">PA</option>
-        <option value="RA">RA</option>
-        <option value="FG3M">Triples</option>
-        <option value="MIN">Minutos</option>
-        <option value="DD">Double-Double</option>
-        <option value="TD">Triple-Double</option>
-      </select>
-      <select id="nba-line"></select>
-      <select id="nba-lastn">
-        <option value="8">Últimos 8</option>
-        <option value="12" selected>Últimos 12</option>
-        <option value="15">Últimos 15</option>
-      </select>
-      <button class="btn" onclick="analyzeNBA()">Analizar</button>
-    </div>
+
 
     <div id="ft-toolbar" class="toolbar hidden"></div>
     <p id="status" class="hint"></p>
@@ -205,15 +190,6 @@ let dashState = null; // {kind, payload, market}
 let chartInst = null;
 let searchTimer = null;
 
-const lineSel = document.getElementById("nba-line");
-for (let i = 0; i < 100; i++) {
-  const val = (i + 0.5).toFixed(1);
-  const opt = document.createElement("option");
-  opt.value = val; opt.text = val;
-  if (val === "25.5") opt.selected = true;
-  lineSel.appendChild(opt);
-}
-
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
@@ -247,18 +223,20 @@ function setSport(name) {
   sport = name;
   document.getElementById("tab-nba").classList.toggle("active", name === "nba");
   document.getElementById("tab-football").classList.toggle("active", name === "football");
-  document.getElementById("ft-search-wrap").classList.toggle("hidden", name !== "football");
-  document.getElementById("chips").classList.toggle("hidden", name !== "football");
-  document.getElementById("ft-toolbar").classList.toggle("hidden", name !== "football" || !dashState);
-  document.getElementById("nba-controls").classList.toggle("hidden", name !== "nba");
+  document.getElementById("ft-search-wrap").classList.remove("hidden");
+  document.getElementById("chips").classList.remove("hidden");
   document.getElementById("suggest").classList.remove("open");
+  searchInput.value = "";
+  searchInput.placeholder = name === "nba"
+    ? "Busca un jugador o equipo (Luka Doncic, Tatum, Lakers…)"
+    : "Busca un equipo o jugador (Millonarios, Falcao, Arsenal, Saka…)";
   if (name === "football") {
-    if (dashState && dashState.kind !== "nba") renderFromState();
+    if (dashState && (dashState.kind === "team" || dashState.kind === "player")) renderFromState();
     else loadLeague(currentLeague);
+  } else if (dashState && dashState.kind === "nba") {
+    renderFromState();
   } else {
-    document.getElementById("home").innerHTML = "";
-    if (dashState && dashState.kind === "nba") renderFromState();
-    else { document.getElementById("dash").classList.add("hidden"); setStatus("Elige un jugador y una línea para ver promedios y hit rate."); }
+    loadNbaHome();
   }
 }
 
@@ -309,12 +287,13 @@ document.addEventListener("click", ev => { if (!ev.target.closest(".search-wrap"
 async function runSearch(q, openFirst) {
   if (!q || q.length < 2) return;
   try {
-    const res = await fetch(`${API_BASE}/api/football/search?q=${encodeURIComponent(q)}`);
+    const endpoint = sport === "nba" ? "/api/nba/search" : "/api/football/search";
+    const res = await fetch(`${API_BASE}${endpoint}?q=${encodeURIComponent(q)}`);
     const data = await res.json();
     const teams = data.teams || [];
     const players = data.players || [];
-    if (openFirst && teams[0]) { suggestBox.classList.remove("open"); openTeam(teams[0].id, teams[0].name); return; }
-    if (openFirst && players[0]) { suggestBox.classList.remove("open"); openPlayer(players[0].id, players[0].name); return; }
+    if (openFirst && teams[0]) { suggestBox.classList.remove("open"); openEntity("team", teams[0]); return; }
+    if (openFirst && players[0]) { suggestBox.classList.remove("open"); openEntity("player", players[0]); return; }
     let html = "";
     if (teams.length) {
       html += `<div class="sg-sec">Equipos</div>` + teams.map(t => `
@@ -325,7 +304,7 @@ async function runSearch(q, openFirst) {
     }
     if (players.length) {
       html += `<div class="sg-sec">Jugadores</div>` + players.map(p => `
-        <div class="sg-item" data-kind="player" data-id="${p.id}" data-name="${escapeHtml(p.fullname || p.name)}">
+        <div class="sg-item" data-kind="player" data-id="${p.id}" data-name="${escapeHtml(p.fullname || p.name)}" data-team="${p.team_id || ""}">
           ${p.photo ? `<img src="${p.photo}" alt="">` : ""}
           <div><strong>${escapeHtml(p.fullname || p.name)}</strong><div class="muted" style="font-size:.75rem">${escapeHtml(p.position || "")} ${escapeHtml(p.nationality || "")}</div></div>
         </div>`).join("");
@@ -337,13 +316,129 @@ async function runSearch(q, openFirst) {
       el.addEventListener("click", () => {
         suggestBox.classList.remove("open");
         searchInput.value = el.dataset.name || "";
-        if (el.dataset.kind === "team") openTeam(Number(el.dataset.id), el.dataset.name);
-        else openPlayer(Number(el.dataset.id), el.dataset.name);
+        openEntity(el.dataset.kind, { id: el.dataset.id, name: el.dataset.name, team_id: el.dataset.team });
       });
     });
   } catch (e) {
     suggestBox.innerHTML = `<div class="sg-item err">Error de conexión</div>`;
     suggestBox.classList.add("open");
+  }
+}
+
+
+function openEntity(kind, item) {
+  suggestBox.classList.remove("open");
+  if (!item) return;
+  if (kind === "team") {
+    if (sport === "nba") openNbaTeam(item.id, item.name);
+    else openTeam(Number(item.id), item.name);
+  } else if (sport === "nba") {
+    openNbaPlayer(item.id, item.name || item.fullname, item.team_id);
+  } else {
+    openPlayer(Number(item.id), item.name || item.fullname, item.team_id ? Number(item.team_id) : undefined);
+  }
+}
+
+let nbaTeams = [];
+
+function renderNbaChips(activeId) {
+  const popular = (nbaTeams.length ? nbaTeams : currentTeams).filter(t => t.popular);
+  const chips = document.getElementById("chips");
+  chips.innerHTML = `<button class="chip${!activeId ? " active" : ""}" data-all="1">Todos</button>` +
+    popular.map(t => `<button class="chip${String(activeId)===String(t.id)?" active":""}" data-id="${t.id}" data-name="${escapeHtml(t.name)}">${escapeHtml(t.short_name || t.name)}</button>`).join("");
+  chips.querySelectorAll(".chip").forEach(el => el.addEventListener("click", () => {
+    if (el.dataset.all) loadNbaHome();
+    else openNbaTeam(el.dataset.id, el.dataset.name);
+  }));
+}
+
+function renderNbaTeamGrid(teams) {
+  const home = document.getElementById("home");
+  home.innerHTML = `<div class="grid">` + (teams || []).map(t => `
+    <div class="team-card" data-id="${t.id}" data-name="${escapeHtml(t.name)}">
+      ${t.logo ? `<img src="${t.logo}" alt="">` : ""}
+      <strong>${escapeHtml(t.name)}</strong>
+      <span>${escapeHtml(t.short_name || "NBA")}</span>
+    </div>`).join("") + `</div>`;
+  home.querySelectorAll(".team-card").forEach(el => el.addEventListener("click", () => openNbaTeam(el.dataset.id, el.dataset.name)));
+}
+
+async function loadNbaHome() {
+  dashState = null;
+  document.getElementById("dash").classList.add("hidden");
+  document.getElementById("ft-toolbar").classList.add("hidden");
+  const home = document.getElementById("home");
+  home.innerHTML = "";
+  setStatus("Cargando equipos NBA… Si el servidor estaba dormido, puede tardar unos segundos.");
+  try {
+    const res = await fetch(`${API_BASE}/api/nba/teams`);
+    const data = await res.json();
+    if (!res.ok) { setStatus(formatError(data), true); return; }
+    nbaTeams = currentTeams = data.teams || [];
+    renderNbaChips();
+    setStatus("NBA");
+    renderNbaTeamGrid(nbaTeams);
+  } catch (e) {
+    setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
+  }
+}
+
+async function openNbaTeam(id, name) {
+  document.getElementById("dash").classList.add("hidden");
+  document.getElementById("ft-toolbar").classList.add("hidden");
+  dashState = null;
+  if (nbaTeams.length) renderNbaChips(id);
+  setStatus(`Cargando plantilla de ${name}…`);
+  const home = document.getElementById("home");
+  home.innerHTML = "";
+  try {
+    const res = await fetch(`${API_BASE}/api/nba/roster?team_id=${encodeURIComponent(id)}`);
+    const data = await res.json();
+    if (!res.ok) { setStatus(formatError(data), true); return; }
+    const team = data.team || { id, name };
+    const players = data.players || [];
+    setStatus(team.name || name);
+    if (nbaTeams.length) renderNbaChips(id);
+    home.innerHTML = `<div class="card"><h2 style="margin-bottom:14px;display:flex;align-items:center;gap:10px">${team.logo ? `<img src="${team.logo}" alt="" style="width:36px;height:36px;object-fit:contain">` : ""}${escapeHtml(team.name || name)}</h2>
+      <div class="grid">` + players.map(p => `
+        <div class="team-card" data-id="${p.id}" data-name="${escapeHtml(p.name)}" data-team="${id}">
+          ${p.photo ? `<img src="${p.photo}" alt="" style="border-radius:50%;object-fit:cover">` : ""}
+          <strong>${escapeHtml(p.name)}</strong>
+          <span>${escapeHtml([p.number ? "#"+p.number : "", p.position].filter(Boolean).join(" · "))}</span>
+        </div>`).join("") + `</div></div>`;
+    home.querySelectorAll(".team-card").forEach(el => el.addEventListener("click", () => openNbaPlayer(el.dataset.id, el.dataset.name, el.dataset.team)));
+  } catch (e) {
+    setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
+  }
+}
+
+async function openNbaPlayer(id, name, teamId, keepToolbar) {
+  document.getElementById("home").innerHTML = "";
+  document.getElementById("dash").classList.remove("hidden");
+  dashState = { kind: "nba", id, name, teamId };
+  renderFtToolbar("nba");
+  setStatus(`Cargando estadísticas de ${name}…`);
+  const params = ftParams();
+  const body = { player_id: id, player: name, last_n: params.last_n, include_ai: false };
+  try {
+    const res = await fetch(`${API_BASE}/api/nba/analyze/player`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) { setStatus(formatError(data), true); return; }
+    dashState.payload = data;
+    dashState.market = data.primary;
+    setStatus("");
+    renderFromState();
+    fetch(`${API_BASE}/api/nba/analyze/player`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ ...body, include_ai: true, market: dashState.market }) })
+      .then(r => r.json()).then(ai => {
+        if (ai && ai.ai_analysis && dashState && dashState.kind === "nba") {
+          dashState.payload.ai_analysis = ai.ai_analysis;
+          if (ai.recommendation) dashState.payload.recommendation = ai.recommendation;
+          const box = document.getElementById("ai-card");
+          if (box) box.outerHTML = renderAI(ai.ai_analysis);
+        }
+      }).catch(() => {});
+  } catch (e) {
+    setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
   }
 }
 
@@ -356,7 +451,7 @@ function ftParams() {
 
 function renderFtToolbar(kind) {
   const bar = document.getElementById("ft-toolbar");
-  if (sport !== "football") { bar.classList.add("hidden"); return; }
+  if (sport !== "football" && sport !== "nba") { bar.classList.add("hidden"); return; }
   const s = dashState || {};
   const last = (s.payload && s.payload.last_n) || 10;
   const venue = (s.payload && s.payload.venue) || "all";
@@ -366,7 +461,7 @@ function renderFtToolbar(kind) {
     <div class="seg" id="ft-lastn-seg">
       ${[5,10,15].map(n => `<button data-n="${n}" class="${n===last?"active":""}">Últimos ${n}</button>`).join("")}
     </div>
-    ${kind === "team" ? `<div class="seg" id="ft-venue-seg">
+    ${(kind === "team") ? `<div class="seg" id="ft-venue-seg">
       <button data-v="all" class="${venue==="all"?"active":""}">Todos</button>
       <button data-v="home" class="${venue==="home"?"active":""}">Local</button>
       <button data-v="away" class="${venue==="away"?"active":""}">Visitante</button>
@@ -402,6 +497,7 @@ function refreshCurrent() {
   if (!dashState) return;
   if (dashState.kind === "team") openTeam(dashState.id, dashState.name, true);
   if (dashState.kind === "player") openPlayer(dashState.id, dashState.name, dashState.teamId, true);
+  if (dashState.kind === "nba") openNbaPlayer(dashState.id, dashState.name, dashState.teamId, true);
 }
 
 async function openTeam(id, name, keepToolbar) {
@@ -483,12 +579,37 @@ async function loadSquad(teamId) {
   } catch (e) {}
 }
 
+function snapHalf(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return 0.5;
+  return Math.max(0.5, Math.round(x - 0.5) + 0.5);
+}
+function sideLabel(side) { return side === "no" ? "No" : "Sí"; }
 function recomputeMarket(stat, line) {
-  const values = (stat.values || []).map(v => ({ ...v, line, over: Number(v.value) > Number(line) }));
+  if (stat.kind === "yesno") {
+    const side = (line === "no" || line === "No") ? "no" : "yes";
+    const values = (stat.values || []).map(v => {
+      const happened = Number(v.value) === 1;
+      return { ...v, line: side, over: side === "yes" ? happened : !happened };
+    });
+    const games = values.length;
+    const hits = values.filter(v => v.over).length;
+    const yesHits = values.filter(v => Number(v.value) === 1).length;
+    const yesRate = games ? Math.round(yesHits * 1000 / games) / 10 : null;
+    return {
+      ...stat, line: side, side, values, hits, games,
+      yes_rate: yesRate,
+      no_rate: yesRate == null ? null : Math.round((100 - yesRate) * 10) / 10,
+      avg: games ? Math.round(yesHits / games * 100) / 100 : null,
+      hit_rate: games ? Math.round(hits * 1000 / games) / 10 : null
+    };
+  }
+  const snapped = snapHalf(line);
+  const values = (stat.values || []).map(v => ({ ...v, line: snapped, over: Number(v.value) > snapped }));
   const games = values.length;
   const hits = values.filter(v => v.over).length;
   const avg = games ? Math.round(values.reduce((s, v) => s + Number(v.value), 0) / games * 100) / 100 : null;
-  return { ...stat, line: Number(line), values, hits, games, avg, hit_rate: games ? Math.round(hits * 1000 / games) / 10 : null };
+  return { ...stat, line: snapped, values, hits, games, avg, hit_rate: games ? Math.round(hits * 1000 / games) / 10 : null };
 }
 
 function activeMarket() {
@@ -517,12 +638,11 @@ function renderFromState() {
   if (!dashState || !dashState.payload) { dash.classList.add("hidden"); return; }
   dash.classList.remove("hidden");
   const data = dashState.payload;
-  if (dashState.kind === "nba") { renderNBADash(data); return; }
-
   const stats = data.stats || {};
   const market = activeMarket();
   const rec = data.recommendation || {};
-  const isPlayer = dashState.kind === "player";
+  const isPlayer = dashState.kind === "player" || dashState.kind === "nba";
+  const isYesNo = market && market.kind === "yesno";
   const person = isPlayer ? (data.player || {}) : (data.team || {});
   const photo = isPlayer ? person.photo : person.logo;
   const title = isPlayer ? (person.fullname || person.name) : person.name;
@@ -530,25 +650,36 @@ function renderFromState() {
     ? `${(data.team && data.team.name) || ""} · ${person.position || ""} · ${data.played || 0} partidos`
     : `${(data.league && data.league.name) || ""} · temporada ${data.season || ""} · ${data.form || ""}`;
   const pct = market && market.hit_rate;
-  const lineTxt = market ? `${market.label} ${market.line}` : "";
-  const lean = (rec.lean || "NEUTRAL");
-  const leanLabel = market ? `${lean} ${market.line} ${market.label}` : lean;
+  const lineTxt = market
+    ? (isYesNo ? `${market.label} ${sideLabel(market.side || market.line)}` : `${market.label} ${market.line}`)
+    : "";
+  const leanRaw = (rec.lean || "NEUTRAL");
+  const lean = leanRaw === "SÍ" ? "SI" : leanRaw;
+  const leanPretty = lean === "SI" ? "SÍ" : lean;
+  const leanLine = isYesNo ? sideLabel(market.side || market.line) : (market ? market.line : "");
+  const leanLabel = market ? `${leanPretty} ${leanLine} ${market.label}` : leanPretty;
 
   const formHint = !isPlayer && data.record
     ? `${data.record.wins}W-${data.record.draws}E-${data.record.losses}D`
     : (isPlayer && data.season_totals && data.season_totals.leagues
         ? data.season_totals.leagues.map(l => `${l.league || ""}: ${l.appearances || 0} PJ, ${l.goals ?? "–"} goles`).join(" · ")
-        : "");
+        : (dashState.kind === "nba" ? `${data.played || (market && market.games) || 0} partidos` : ""));
 
   const rowsHtml = Object.values(stats).map(m => {
     if (!m) return "";
     if (m.key === "saves" && dashState.kind === "player" && !data.is_goalkeeper) return "";
     const hot = m.hit_rate >= 60 ? "hot" : m.hit_rate <= 40 ? "cold" : "";
     const active = m.key === (dashState.market) ? " active" : "";
+    const avgTxt = m.kind === "yesno"
+      ? (m.yes_rate == null ? "–" : m.yes_rate + "% Sí")
+      : (m.avg == null ? "–" : m.avg + " avg");
+    const lineCtl = m.kind === "yesno"
+      ? `<div class="seg yesno" data-key="${m.key}"><button type="button" data-side="yes" class="${(m.side||m.line)!=="no"?"active":""}">Sí</button><button type="button" data-side="no" class="${(m.side||m.line)==="no"?"active":""}">No</button></div>`
+      : `<div class="step" data-key="${m.key}"><button type="button" data-dir="-1">−</button><span>${m.line}</span><button type="button" data-dir="1">+</button></div>`;
     return `<div class="prop${active}" data-key="${m.key}">
       <div class="name">${escapeHtml(m.label)}</div>
-      <div class="avg">${m.avg == null ? "–" : m.avg} avg</div>
-      <div class="line"><input type="number" step="0.5" value="${m.line}" data-key="${m.key}"></div>
+      <div class="avg">${avgTxt}</div>
+      <div class="line">${lineCtl}</div>
       <div class="pct ${hot}">${m.hit_rate == null ? "–" : m.hit_rate + "%"}</div>
       ${sparkSvg(m.values)}
     </div>`;
@@ -559,8 +690,8 @@ function renderFromState() {
     <tr>
       <td>${escapeHtml((v.date || "").slice(0,10))}</td>
       <td>${escapeHtml(v.opponent || "")} ${v.venue === "home" ? "(L)" : v.venue === "away" ? "(V)" : ""}</td>
-      <td>${v.line}</td>
-      <td>${v.value}</td>
+      <td>${isYesNo ? sideLabel(v.line) : v.line}</td>
+      <td>${isYesNo ? (v.display || sideLabel(Number(v.value)===1?"yes":"no")) : v.value}</td>
       <td><span class="pill ${v.over ? "hit" : "miss"}">${v.over ? "HIT" : "MISS"}</span></td>
     </tr>`).join("");
 
@@ -576,7 +707,7 @@ function renderFromState() {
           <div>
             <div class="lbl">Hit rate · ${escapeHtml(lineTxt)}</div>
             <div class="num">${pct == null ? "–" : pct.toFixed(1) + "%"}</div>
-            <div class="hint" style="margin-top:8px">${escapeHtml(formHint)} · ${market ? market.hits + "/" + market.games + " over" : ""}</div>
+            <div class="hint" style="margin-top:8px">${escapeHtml(formHint)} · ${market ? market.hits + "/" + market.games + (isYesNo ? ((market.side||market.line)==="no" ? " No" : " Sí") : " over") : ""}</div>
           </div>
         </div>
         <div class="card"><div class="chart-box"><canvas id="main-chart"></canvas></div></div>
@@ -601,7 +732,7 @@ function renderFromState() {
           ${renderGauge(pct)}
           ${renderStars(rec.confidence)}
           <div class="lean ${lean}">LEAN ${escapeHtml(leanLabel)}</div>
-          <div class="hint" style="margin-top:8px">Promedio ${market && market.avg != null ? market.avg : "–"} vs línea ${market ? market.line : "–"}</div>
+          <div class="hint" style="margin-top:8px">${isYesNo ? `Sí ${market && market.yes_rate != null ? market.yes_rate + "%" : "–"} · No ${market && market.no_rate != null ? market.no_rate + "%" : "–"}` : `Promedio ${market && market.avg != null ? market.avg : "–"} vs línea ${market ? market.line : "–"}`}</div>
         </div>
         ${renderAI(data.ai_analysis)}
         ${isPlayer ? '' : '<div class="card" id="squad-card"></div>'}
@@ -612,22 +743,34 @@ function renderFromState() {
   else if (!isPlayer) { /* squad loading */ }
 
   dash.querySelectorAll(".prop").forEach(el => el.addEventListener("click", ev => {
-    if (ev.target.tagName === "INPUT") return;
+    if (ev.target.closest(".step, .yesno, button")) return;
     dashState.market = el.dataset.key;
     renderFromState();
   }));
-  dash.querySelectorAll(".prop input").forEach(inp => inp.addEventListener("change", ev => {
-    const key = ev.target.dataset.key;
-    const line = Number(ev.target.value);
-    if (!dashState.payload.stats[key]) return;
+  dash.querySelectorAll(".step button").forEach(btn => btn.addEventListener("click", ev => {
+    ev.stopPropagation();
+    const key = btn.parentElement.dataset.key;
+    const dir = Number(btn.dataset.dir);
+    const current = Number((dashState.payload.stats[key] || {}).line);
+    const line = snapHalf(current + dir);
     dashState.payload.stats[key] = recomputeMarket(dashState.payload.stats[key], line);
     dashState.market = key;
     renderFromState();
   }));
-  drawChart(values, market && market.line, market && market.label);
+  dash.querySelectorAll(".yesno button").forEach(btn => btn.addEventListener("click", ev => {
+    ev.stopPropagation();
+    const key = btn.parentElement.dataset.key;
+    dashState.payload.stats[key] = recomputeMarket(dashState.payload.stats[key], btn.dataset.side);
+    dashState.market = key;
+    if (dashState.payload.recommendation) {
+      dashState.payload.recommendation = Object.assign({}, dashState.payload.recommendation, { line: btn.dataset.side });
+    }
+    renderFromState();
+  }));
+  drawChart(values, isYesNo ? 0.5 : (market && market.line), market && market.label, isYesNo);
 }
 
-function drawChart(values, line, label) {
+function drawChart(values, line, label, yesNo) {
   const canvas = document.getElementById("main-chart");
   if (!canvas || typeof Chart === "undefined") return;
   if (chartInst) chartInst.destroy();
@@ -650,7 +793,7 @@ function drawChart(values, line, label) {
           pointBorderColor: "#0b1020"
         },
         {
-          label: "Línea",
+          label: yesNo ? "Sí / No" : "Línea",
           data: series.map(() => line),
           borderColor: "#f3c15e",
           borderDash: [6, 4],
@@ -665,88 +808,12 @@ function drawChart(values, line, label) {
       plugins: { legend: { labels: { color: "#8b9bb8", boxWidth: 12 } } },
       scales: {
         x: { ticks: { color: "#8b9bb8", maxRotation: 40, minRotation: 0, font: { size: 10 } }, grid: { display: false } },
-        y: { ticks: { color: "#8b9bb8" }, grid: { color: "rgba(36,48,73,.8)" }, beginAtZero: true }
+        y: yesNo
+          ? { min: 0, max: 1, ticks: { color: "#8b9bb8", stepSize: 1, callback: v => v === 1 ? "Sí" : v === 0 ? "No" : "" }, grid: { color: "rgba(36,48,73,.8)" } }
+          : { ticks: { color: "#8b9bb8" }, grid: { color: "rgba(36,48,73,.8)" }, beginAtZero: true }
       }
     }
   });
-}
-
-async function analyzeNBA() {
-  const player = document.getElementById("nba-player").value.trim();
-  const prop = document.getElementById("nba-prop").value;
-  const line = parseFloat(document.getElementById("nba-line").value);
-  const last_n = Number(document.getElementById("nba-lastn").value || 12);
-  setStatus("Analizando…");
-  document.getElementById("home").innerHTML = "";
-  document.getElementById("dash").classList.remove("hidden");
-  try {
-    const res = await fetch(`${API_BASE}/analyze`, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ player, prop, line, last_n })
-    });
-    const data = await res.json();
-    if (!res.ok) { setStatus(formatError(data), true); return; }
-    dashState = { kind: "nba", payload: data, market: "prop" };
-    setStatus("");
-    renderFromState();
-  } catch (e) {
-    setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
-  }
-}
-
-function renderNBADash(data) {
-  const s = data.stats || {};
-  const games = data.games || [];
-  const values = games.map((g, i) => ({
-    date: g.GAME_DATE || g.game_date || "",
-    opponent: g.opponent || g.MATCHUP || `J${i+1}`,
-    value: Number(g[s.value_col] ?? g.value ?? 0),
-    line: s.line,
-    over: !!(g.Over || g.over)
-  }));
-  const market = { key: "prop", label: s.prop, line: s.line, avg: s.avg, hit_rate: s.hit_rate, hits: Math.round((s.hit_rate/100)*s.games), games: s.games, values };
-  const recLean = s.hit_rate >= 60 ? "OVER" : s.hit_rate <= 40 ? "UNDER" : "NEUTRAL";
-  const recConf = s.hit_rate >= 70 || s.hit_rate <= 30 ? 4 : 3;
-  const dash = document.getElementById("dash");
-  dash.innerHTML = `
-    <div class="dash">
-      <div class="col">
-        <div class="card kpi">
-          <div>
-            <div class="lbl">Hit rate · ${escapeHtml(s.prop)} ${s.line}</div>
-            <div class="num">${s.hit_rate != null ? s.hit_rate + "%" : "–"}</div>
-            <div class="hint" style="margin-top:8px">Promedio ${s.avg} en ${s.games} partidos</div>
-          </div>
-        </div>
-        <div class="card"><div class="chart-box"><canvas id="main-chart"></canvas></div></div>
-        <div class="card">
-          <h3 style="margin-bottom:8px;font-size:.9rem;">Partidos recientes</h3>
-          <div style="overflow-x:auto"><table>
-            <thead><tr><th>Fecha</th><th>Rival</th><th>Línea</th><th>Valor</th><th></th></tr></thead>
-            <tbody>${values.map(v => `<tr>
-              <td>${escapeHtml(String(v.date).slice(0,10))}</td>
-              <td>${escapeHtml(v.opponent)}</td>
-              <td>${v.line}</td>
-              <td>${v.value}</td>
-              <td><span class="pill ${v.over?"hit":"miss"}">${v.over?"HIT":"MISS"}</span></td>
-            </tr>`).join("")}</tbody>
-          </table></div>
-        </div>
-      </div>
-      <div class="col">
-        <div class="card spot">
-          <h2>${escapeHtml(s.player || "")}</h2>
-          <div class="hint">${escapeHtml(s.prop)} · línea ${s.line}</div>
-          ${renderGauge(s.hit_rate)}
-          ${renderStars(recConf)}
-          <div class="lean ${recLean}">LEAN ${recLean} ${s.line} ${escapeHtml(s.prop)}</div>
-          <div class="hint" style="margin-top:8px">Promedio ${s.avg} vs línea ${s.line}</div>
-        </div>
-        ${renderAI(data.ai_analysis)}
-      </div>
-    </div>`;
-  drawChart(values, s.line, s.prop);
 }
 
 renderChips();
