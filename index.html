@@ -238,6 +238,8 @@
 
 <script>
 const API_BASE = "https://hba-backend.onrender.com";
+const SUPABASE_URL = "https://dkritgjlezpfmvvqpmim.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrcml0Z2psZXpwZm12dnFwbWltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwMTE5OTMsImV4cCI6MjExMDU4Nzk5M30.qXaa4ovX1UOfh1W7Ab1hOZOcQAkR8C1n3-rCEgz8_tM";
 const DEFAULT_LEAGUE = 239;
 const POPULAR_LEAGUES = [
   { id: 239, name: "Liga BetPlay" },
@@ -1049,11 +1051,24 @@ function closeVip() {
 }
 document.addEventListener("keydown", ev => { if (ev.key === "Escape") closeVip(); });
 
+function applyVipAuthConfig(data) {
+  vipConfig = Object.assign({}, data || vipConfig || {});
+  if (!vipConfig.supabase_url || !vipConfig.supabase_anon_key) {
+    vipConfig.supabase_url = SUPABASE_URL;
+    vipConfig.supabase_anon_key = SUPABASE_ANON_KEY;
+  }
+  if (vipConfig.supabase_url && vipConfig.supabase_anon_key) {
+    vipConfig.supabase = true;
+    vipConfig.google = true;
+  }
+}
 async function bootVip() {
   try {
     const { data } = await vipFetch("/api/vip/config");
-    if (data) vipConfig = data;
-  } catch (e) {}
+    applyVipAuthConfig(data);
+  } catch (e) {
+    applyVipAuthConfig(null);
+  }
   if (vipToken()) {
     const { res, data } = await vipFetch("/api/vip/me");
     if (res.ok && data && data.ok) {
@@ -1068,6 +1083,16 @@ async function bootVip() {
     }
     sessionStorage.removeItem(VIP_TOKEN_KEY);
   }
+  try {
+    const sb = await ensureSupabase();
+    if (sb) {
+      const { data } = await sb.auth.getSession();
+      if (data && data.session) {
+        await vipAfterSupabaseSession(data.session);
+        return;
+      }
+    }
+  } catch (e) {}
   vipUnlocked = false;
   renderVipGate();
 }
@@ -1152,7 +1177,7 @@ async function vipEmailSignup() {
     const sb = await ensureSupabase();
     const email = document.getElementById("vip-email").value.trim();
     const password = document.getElementById("vip-pass").value;
-    const { data, error } = await sb.auth.signUp({ email, password });
+    const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + window.location.pathname } });
     if (error) return renderVipGate(error.message);
     if (data.session) return vipAfterSupabaseSession(data.session);
     renderVipGate("Cuenta creada. Revisa tu correo si pide confirmación y luego inicia sesión. El acceso VIP lo activa el administrador.");
@@ -1373,6 +1398,9 @@ async function sendVipChat() {
 }
 
 
+if (/(access_token|type=signup|type=recovery|code=)/.test(window.location.hash + window.location.search)) {
+  openVip();
+}
 renderChips();
 setSport("football");
 loadLeague(DEFAULT_LEAGUE);
