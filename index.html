@@ -1237,33 +1237,31 @@ function onVipSportChange() {
   document.getElementById("vip-league").classList.toggle("hidden", sport !== "football");
   loadVipPicks();
 }
-async function loadVipPicks() {
-  const status = document.getElementById("vip-picks-status");
-  const list = document.getElementById("vip-picks-list");
-  if (!status || !list) return;
-  status.textContent = "Calculando picks con las estadísticas de HBA…";
-  list.innerHTML = "";
-  const sport = document.getElementById("vip-sport").value;
-  const league = document.getElementById("vip-league").value;
-  let path = `/api/vip/picks?sport=${encodeURIComponent(sport)}`;
-  if (sport === "football" && league) path += `&league=${encodeURIComponent(league)}`;
-  const { res, data } = await vipFetch(path);
-  if (res.status === 401 || res.status === 403) {
-    renderVipGate((data && data.detail) || "Se requiere acceso VIP.");
-    return;
-  }
-  if (!res.ok) {
-    status.innerHTML = `<span class="err">${(data && (data.detail || data.message)) || "No se pudieron calcular los picks."}</span>`;
-    return;
-  }
+
+function vipPicksStorageKey(sport, league) {
+  return "hba_vip_picks:" + sport + ":" + (league || "all");
+}
+function readLocalVipPicks(sport, league) {
+  try {
+    const item = JSON.parse(localStorage.getItem(vipPicksStorageKey(sport, league)) || "null");
+    if (!item || !item.data || !item.ts) return null;
+    if (Date.now() - item.ts > 12 * 3600 * 1000) return null;
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+    if (item.data.date && item.data.date !== today) return null;
+    return item.data;
+  } catch (e) { return null; }
+}
+function writeLocalVipPicks(sport, league, data) {
+  try { localStorage.setItem(vipPicksStorageKey(sport, league), JSON.stringify({ ts: Date.now(), data: data })); } catch (e) {}
+}
+function paintVipPicksStatus(status, data) {
   const windowLabel = data.window === "upcoming" ? "Próxima jornada (no hay partidos hoy)" : "Pizarra de hoy";
   const fx = (data.fixtures || []).map(f => f.match + (f.kickoff ? ` · ${f.kickoff}` : "")).join(" · ");
   status.innerHTML = `<strong>${windowLabel}</strong> · ${data.date} (hora Colombia)${data.cached ? " · caché" : ""}${fx ? `<br><span class="muted">${fx}</span>` : ""}`;
-  if (!data.picks || !data.picks.length) {
-    list.innerHTML = `<p class="hint">${data.empty_reason || "No hay picks con muestra suficiente para esta pizarra."}</p>`;
-    return;
-  }
-  list.innerHTML = data.picks.map(p => `
+}
+
+function renderVipPickCards(picks) {
+  return (picks || []).map(p => `
     <article class="vip-pick${p.maxima_confianza ? " maxima" : ""}">
       <div class="vip-pick-top">
         <div class="vip-rank">PICK ${p.rank}${p.maxima_confianza ? ' <span class="vip-maxima">Máxima confianza</span>' : ""}</div>
@@ -1288,6 +1286,40 @@ async function loadVipPicks() {
       <p class="vip-reason">${p.reason || ""}</p>
     </article>
   `).join("");
+}
+
+async function loadVipPicks() {
+  const status = document.getElementById("vip-picks-status");
+  const list = document.getElementById("vip-picks-list");
+  if (!status || !list) return;
+  const sport = document.getElementById("vip-sport").value;
+  const league = document.getElementById("vip-league").value;
+  status.textContent = "Calculando picks con las estadísticas de HBA…";
+  const localCached = readLocalVipPicks(sport, league);
+  if (localCached && (localCached.picks || []).length) {
+    list.innerHTML = renderVipPickCards(localCached.picks);
+  } else {
+    list.innerHTML = "";
+  }
+  let path = `/api/vip/picks?sport=${encodeURIComponent(sport)}`;
+  if (sport === "football" && league) path += `&league=${encodeURIComponent(league)}`;
+  const { res, data } = await vipFetch(path);
+  if (res.status === 401 || res.status === 403) {
+    renderVipGate((data && data.detail) || "Se requiere acceso VIP.");
+    return;
+  }
+  if (!res.ok) {
+    status.innerHTML = `<span class="err">${(data && (data.detail || data.message)) || "No se pudieron calcular los picks."}</span>`;
+    return;
+  }
+  paintVipPicksStatus(status, data);
+  writeLocalVipPicks(sport, league, data);
+  if (!data.picks || !data.picks.length) {
+    list.innerHTML = `<p class="hint">${data.empty_reason || "No hay picks con muestra suficiente para esta pizarra."}</p>`;
+    return;
+  }
+  list.innerHTML = renderVipPickCards(data.picks);
+
 }
 
 function renderSlipTab() {
