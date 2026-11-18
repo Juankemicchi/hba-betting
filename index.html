@@ -1255,9 +1255,8 @@ function writeLocalVipPicks(sport, league, data) {
   try { localStorage.setItem(vipPicksStorageKey(sport, league), JSON.stringify({ ts: Date.now(), data: data })); } catch (e) {}
 }
 function paintVipPicksStatus(status, data) {
-  const windowLabel = data.window === "upcoming" ? "Próxima jornada (no hay partidos hoy)" : "Pizarra de hoy";
-  const fx = (data.fixtures || []).map(f => f.match + (f.kickoff ? ` · ${f.kickoff}` : "")).join(" · ");
-  status.innerHTML = `<strong>${windowLabel}</strong> · ${data.date} (hora Colombia)${data.cached ? " · caché" : ""}${fx ? `<br><span class="muted">${fx}</span>` : ""}`;
+  const windowLabel = data.window === "upcoming" ? "Próxima jornada (no hay partidos hoy)" : "Picks del día";
+  status.innerHTML = `<strong>${windowLabel}</strong> · ${data.date} (hora Colombia)${data.cached ? " · caché" : ""}`;
 }
 
 function renderVipPickCards(picks) {
