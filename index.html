@@ -411,7 +411,7 @@ async function openTeam(id, name, keepToolbar) {
   renderFtToolbar("team");
   setStatus(`Cargando estadísticas de ${name}…`);
   const params = ftParams();
-  const body = { team_id: id, team: name, league: currentLeague, last_n: params.last_n, venue: params.venue, opponent: params.opponent, include_ai: false };
+  const body = { team_id: id, team: name, league: currentLeague, last_n: params.last_n, venue: params.venue, include_ai: false }; if (params.opponent) body.opponent = params.opponent;
   try {
     const res = await fetch(`${API_BASE}/api/football/analyze/team`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
     const data = await res.json();
