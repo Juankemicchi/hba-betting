@@ -304,7 +304,7 @@ async function runSearch(q, openFirst) {
     }
     if (players.length) {
       html += `<div class="sg-sec">Jugadores</div>` + players.map(p => `
-        <div class="sg-item" data-kind="player" data-id="${p.id}" data-name="${escapeHtml(p.fullname || p.name)}" data-team="${p.team_id || ""}">
+        <div class="sg-item" data-kind="player" data-id="${p.id}" data-name="${escapeHtml(p.fullname || p.name)}" data-team="${p.team_id || ""}" data-team-name="${escapeHtml(p.team_name || "")}">
           ${p.photo ? `<img src="${p.photo}" alt="">` : ""}
           <div><strong>${escapeHtml(p.fullname || p.name)}</strong><div class="muted" style="font-size:.75rem">${escapeHtml(p.position || "")} ${escapeHtml(p.nationality || "")}</div></div>
         </div>`).join("");
@@ -316,7 +316,7 @@ async function runSearch(q, openFirst) {
       el.addEventListener("click", () => {
         suggestBox.classList.remove("open");
         searchInput.value = el.dataset.name || "";
-        openEntity(el.dataset.kind, { id: el.dataset.id, name: el.dataset.name, team_id: el.dataset.team });
+        openEntity(el.dataset.kind, { id: el.dataset.id, name: el.dataset.name, team_id: el.dataset.team, team_name: el.dataset.teamName });
       });
     });
   } catch (e) {
@@ -333,7 +333,7 @@ function openEntity(kind, item) {
     if (sport === "nba") openNbaTeam(item.id, item.name);
     else openTeam(Number(item.id), item.name);
   } else if (sport === "nba") {
-    openNbaPlayer(item.id, item.name || item.fullname, item.team_id);
+    openNbaPlayer(item.id, item.name || item.fullname, item.team_id, false, item.team_name);
   } else {
     openPlayer(Number(item.id), item.name || item.fullname, item.team_id ? Number(item.team_id) : undefined);
   }
@@ -401,21 +401,21 @@ async function openNbaTeam(id, name) {
     if (nbaTeams.length) renderNbaChips(id);
     home.innerHTML = `<div class="card"><h2 style="margin-bottom:14px;display:flex;align-items:center;gap:10px">${team.logo ? `<img src="${team.logo}" alt="" style="width:36px;height:36px;object-fit:contain">` : ""}${escapeHtml(team.name || name)}</h2>
       <div class="grid">` + players.map(p => `
-        <div class="team-card" data-id="${p.id}" data-name="${escapeHtml(p.name)}" data-team="${id}">
+        <div class="team-card" data-id="${p.id}" data-name="${escapeHtml(p.name)}" data-team="${id}" data-team-name="${escapeHtml(team.name || name || "")}">
           ${p.photo ? `<img src="${p.photo}" alt="" style="border-radius:50%;object-fit:cover">` : ""}
           <strong>${escapeHtml(p.name)}</strong>
           <span>${escapeHtml([p.number ? "#"+p.number : "", p.position].filter(Boolean).join(" · "))}</span>
         </div>`).join("") + `</div></div>`;
-    home.querySelectorAll(".team-card").forEach(el => el.addEventListener("click", () => openNbaPlayer(el.dataset.id, el.dataset.name, el.dataset.team)));
+    home.querySelectorAll(".team-card").forEach(el => el.addEventListener("click", () => openNbaPlayer(el.dataset.id, el.dataset.name, el.dataset.team, false, el.dataset.teamName)));
   } catch (e) {
     setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
   }
 }
 
-async function openNbaPlayer(id, name, teamId, keepToolbar) {
+async function openNbaPlayer(id, name, teamId, keepToolbar, teamName) {
   document.getElementById("home").innerHTML = "";
   document.getElementById("dash").classList.remove("hidden");
-  dashState = { kind: "nba", id, name, teamId };
+  dashState = { kind: "nba", id, name, teamId, teamName: teamName || (dashState && dashState.teamName) };
   renderFtToolbar("nba");
   setStatus(`Cargando estadísticas de ${name}…`);
   const params = ftParams();
@@ -424,6 +424,9 @@ async function openNbaPlayer(id, name, teamId, keepToolbar) {
     const res = await fetch(`${API_BASE}/api/nba/analyze/player`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
     const data = await res.json();
     if (!res.ok) { setStatus(formatError(data), true); return; }
+    if ((!(data.team && data.team.name)) && dashState.teamName) {
+      data.team = Object.assign({}, data.team || {}, { name: dashState.teamName });
+    }
     dashState.payload = data;
     dashState.market = data.primary;
     setStatus("");
@@ -512,6 +515,9 @@ async function openTeam(id, name, keepToolbar) {
     const res = await fetch(`${API_BASE}/api/football/analyze/team`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
     const data = await res.json();
     if (!res.ok) { setStatus(formatError(data), true); return; }
+    if ((!(data.team && data.team.name)) && dashState.teamName) {
+      data.team = Object.assign({}, data.team || {}, { name: dashState.teamName });
+    }
     dashState.payload = data;
     dashState.market = data.primary;
     setStatus("");
@@ -544,6 +550,9 @@ async function openPlayer(id, name, teamId, keepToolbar) {
     const res = await fetch(`${API_BASE}/api/football/analyze/player`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
     const data = await res.json();
     if (!res.ok) { setStatus(formatError(data), true); return; }
+    if ((!(data.team && data.team.name)) && dashState.teamName) {
+      data.team = Object.assign({}, data.team || {}, { name: dashState.teamName });
+    }
     dashState.payload = data;
     dashState.market = data.primary;
     setStatus("");
