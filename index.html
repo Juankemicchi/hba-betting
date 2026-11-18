@@ -500,7 +500,8 @@ function activeMarket() {
 function renderGauge(pct) {
   const p = Math.max(0, Math.min(100, Number(pct) || 0));
   const color = p >= 55 ? "var(--green)" : p <= 40 ? "var(--red)" : "var(--gold)";
-  return `<div class="gauge-wrap"><div class="gauge" style="background: conic-gradient(${color} ${p}%, #243049 0)"><span>${p ? p.toFixed(0) : "–"}%</span></div></div>`;
+  const label = (pct == null || Number.isNaN(Number(pct))) ? "–" : p.toFixed(0);
+  return `<div class="gauge-wrap"><div class="gauge" style="background: conic-gradient(${color} ${p}%, #243049 0)"><span>${label}%</span></div></div>`;
 }
 function renderStars(n) {
   const c = Math.max(1, Math.min(5, Number(n) || 1));
@@ -541,7 +542,7 @@ function renderFromState() {
 
   const rowsHtml = Object.values(stats).map(m => {
     if (!m) return "";
-    if (m.key === "saves" && !data.is_goalkeeper) return "";
+    if (m.key === "saves" && dashState.kind === "player" && !data.is_goalkeeper) return "";
     const hot = m.hit_rate >= 60 ? "hot" : m.hit_rate <= 40 ? "cold" : "";
     const active = m.key === (dashState.market) ? " active" : "";
     return `<div class="prop${active}" data-key="${m.key}">
@@ -603,7 +604,7 @@ function renderFromState() {
           <div class="hint" style="margin-top:8px">Promedio ${market && market.avg != null ? market.avg : "–"} vs línea ${market ? market.line : "–"}</div>
         </div>
         ${renderAI(data.ai_analysis)}
-        <div class="card" id="squad-card"></div>
+        ${isPlayer ? '' : '<div class="card" id="squad-card"></div>'}
       </div>
     </div>`;
 
