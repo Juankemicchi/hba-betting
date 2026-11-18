@@ -47,6 +47,18 @@
     .league-hit:hover { border-color: #3b82f6; }
     .league-hit img { width: 24px; height: 24px; object-fit: contain; }
     #ft-league { min-width: 240px; }
+    @media (max-width: 800px) {
+      .header { flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 16px; }
+      .sports { flex-wrap: wrap; }
+      .dashboard { grid-template-columns: 1fr; }
+      .controls { flex-direction: column; }
+      .controls input, .controls select, .analyze-btn, #ft-league { width: 100%; min-width: 0; }
+      .container { margin: 16px auto; padding: 0 12px; }
+      .card { padding: 16px; }
+      .team-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+      .player-list { grid-template-columns: 1fr; }
+      .match-row { flex-wrap: wrap; justify-content: center; text-align: center; }
+    }
 
   </style>
 </head>
@@ -177,7 +189,7 @@
         const response = await fetch(`${API_BASE}/api/football/leagues?search=${encodeURIComponent(q)}`);
         const data = await response.json();
         if (!response.ok) {
-          box.innerHTML = `<p style="color:#ef4444">${data.detail}</p>`;
+          box.innerHTML = `<p style="color:#ef4444">${formatError(data)}</p>`;
           return;
         }
         const leagues = data.leagues || [];
@@ -186,11 +198,14 @@
           return;
         }
         box.innerHTML = leagues.slice(0, 12).map(lg =>
-          `<div class="league-hit" onclick="pickLeague(${lg.id}, '${(lg.name || '').replace(/"/g, '&quot;')}', '${(lg.country || '').replace(/"/g, '&quot;')}')">
+          `<div class="league-hit" data-id="${lg.id}" data-name="${escapeHtml(lg.name || '')}" data-country="${escapeHtml(lg.country || '')}">
             ${lg.logo ? `<img src="${lg.logo}" alt="">` : ""}
-            <div><strong>${lg.name}</strong><div class="meta" style="font-size:0.75rem;color:#94a3b8;">${lg.country || ""} · temporada ${lg.season || ""}</div></div>
+            <div><strong>${escapeHtml(lg.name || "")}</strong><div class="meta" style="font-size:0.75rem;color:#94a3b8;">${escapeHtml(lg.country || "")} · temporada ${lg.season || ""}</div></div>
           </div>`
         ).join('');
+        box.querySelectorAll('.league-hit').forEach(el => {
+          el.addEventListener('click', () => pickLeague(Number(el.dataset.id), el.dataset.name, el.dataset.country));
+        });
       } catch (err) {
         box.innerHTML = `<p style="color:#ef4444">Error de conexión.</p>`;
       }
@@ -205,11 +220,30 @@
       onLeagueChange();
     }
 
+
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    function formatError(data) {
+      const d = data && data.detail;
+      if (!d) return "No se pudo completar la consulta.";
+      if (typeof d === "string") return d;
+      if (Array.isArray(d)) {
+        const msgs = d.map(x => (x && x.msg) || "").filter(Boolean);
+        return msgs.join(". ") || "Revisa los datos e inténtalo de nuevo.";
+      }
+      return "No se pudo completar la consulta.";
+    }
+
     fillLeagueSelect(DEFAULT_LEAGUE);
 
     function showSport(sport) {
       document.querySelectorAll('.sport-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
+      const btn = event.target.closest('.sport-btn') || event.target;
+      btn.classList.add('active');
       
       document.getElementById('nba-section').style.display = sport === 'nba' ? 'block' : 'none';
       document.getElementById('football-section').style.display = sport === 'football' ? 'block' : 'none';
@@ -229,9 +263,9 @@
       if (!teams.length) return `<p class="hint">No se encontraron equipos.</p>`;
       return `<div class="team-grid">` + teams.map(t => `
         <div class="team-card${t.id === selectedId ? ' active' : ''}" onclick="loadSquad(${t.id})">
-          ${t.logo ? `<img src="${t.logo}" alt="${t.name}">` : ''}
-          <strong>${t.name}</strong>
-          <span>${t.venue && t.venue.name ? t.venue.name : (t.code || '')}</span>
+          ${t.logo ? `<img src="${t.logo}" alt="${escapeHtml(t.name)}">` : ''}
+          <strong>${escapeHtml(t.name)}</strong>
+          <span>${escapeHtml((t.venue && t.venue.name) ? t.venue.name : (t.code || ''))}</span>
         </div>
       `).join('') + `</div>`;
     }
@@ -243,10 +277,10 @@
       const sorted = [...players].sort((a, b) => (order[a.position] || 9) - (order[b.position] || 9));
       return `<div class="player-list">` + sorted.map(p => `
         <div class="player-card">
-          ${p.photo ? `<img src="${p.photo}" alt="${p.name}">` : ''}
+          ${p.photo ? `<img src="${p.photo}" alt="${escapeHtml(p.name)}">` : ''}
           <div>
-            <strong>${p.number != null ? p.number + '. ' : ''}${p.name}</strong>
-            <div class="meta">${labels[p.position] || p.position || ''}${p.age ? ' · ' + p.age + ' años' : ''}</div>
+            <strong>${p.number != null ? p.number + '. ' : ''}${escapeHtml(p.name)}</strong>
+            <div class="meta">${escapeHtml(labels[p.position] || p.position || '')}${p.age ? ' · ' + p.age + ' años' : ''}</div>
           </div>
         </div>
       `).join('') + `</div>`;
@@ -264,22 +298,47 @@
       }).join('');
     }
 
+    async function loadTeamAnalysis(teamName, boxId) {
+      const box = document.getElementById(boxId);
+      if (!box) return;
+      try {
+        const response = await fetch(`${API_BASE}/football/team`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ team: teamName, league: selectedLeague() })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          box.innerHTML = `<p style="color:#ef4444">${formatError(data)}</p>`;
+          return;
+        }
+        const stats = data.stats || {};
+        box.innerHTML = renderStanding(stats.standing) + renderAnalysis(data.ai_analysis);
+      } catch (err) {
+        box.innerHTML = `<p class="hint">No se pudo cargar el análisis. Si el servidor estaba dormido, pulsa Analizar de nuevo.</p>`;
+      }
+    }
+
     async function loadSquad(teamId, teamName) {
       teamName = teamName || (cachedTeams.find(t => t.id === teamId) || {}).name || 'el equipo';
       const resultDiv = document.getElementById('football-result');
       const teamsHtml = renderTeams(cachedTeams, teamId);
-      resultDiv.innerHTML = teamsHtml + `<p>Cargando plantilla de ${teamName}...</p>`;
+      resultDiv.innerHTML = teamsHtml + `<p>Cargando plantilla de ${escapeHtml(teamName)}...</p>`;
       try {
         const response = await fetch(`${API_BASE}/api/football/squad?team=${teamId}`);
         const data = await response.json();
         if (!response.ok) {
-          resultDiv.innerHTML = teamsHtml + `<p style="color:#ef4444">${data.detail}</p>`;
+          resultDiv.innerHTML = teamsHtml + `<p style="color:#ef4444">${formatError(data)}</p>`;
           return;
         }
         const name = (data.team && data.team.name) || teamName;
-        resultDiv.innerHTML = teamsHtml + `<div class="analysis" style="margin-top:16px;"><strong>Plantilla de ${name}</strong></div>` + renderPlayers(data.players || []);
+        resultDiv.innerHTML = teamsHtml
+          + `<div id="ft-analysis-box"><p class="hint">Preparando análisis de ${escapeHtml(name)}...</p></div>`
+          + `<div class="analysis" style="margin-top:16px;"><strong>Plantilla de ${escapeHtml(name)}</strong></div>`
+          + renderPlayers(data.players || []);
+        await loadTeamAnalysis(name, "ft-analysis-box");
       } catch (err) {
-        resultDiv.innerHTML = teamsHtml + `<p style="color:#ef4444">Error de conexión.</p>`;
+        resultDiv.innerHTML = teamsHtml + `<p style="color:#ef4444">Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.</p>`;
       }
     }
 
@@ -301,7 +360,7 @@
         const data = await response.json();
 
         if (!response.ok) {
-          resultDiv.innerHTML = `<p style="color:#ef4444">${data.detail}</p>`;
+          resultDiv.innerHTML = `<p style="color:#ef4444">${formatError(data)}</p>`;
           return;
         }
 
@@ -364,7 +423,7 @@
 
     function renderAnalysis(text) {
       if (!text) return "";
-      return `<div class="analysis"><strong>Análisis del Pick</strong><br>${text}</div>`;
+      return `<div class="analysis"><strong>Análisis del Pick</strong><br>${escapeHtml(text)}</div>`;
     }
 
     function renderStanding(st) {
@@ -382,6 +441,10 @@
 
       try {
         if (footballMode === 'h2h') {
+          if (!team || !team2) {
+            resultDiv.innerHTML = `<p style="color:#ef4444">Escribe los dos equipos para ver el cara a cara.</p>`;
+            return;
+          }
           const response = await fetch(`${API_BASE}/football/h2h`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -389,7 +452,7 @@
           });
           const data = await response.json();
           if (!response.ok) {
-            resultDiv.innerHTML = `<p style="color:#ef4444">${data.detail}</p>`;
+            resultDiv.innerHTML = `<p style="color:#ef4444">${formatError(data)}</p>`;
             return;
           }
           const s1 = data.team1_data && data.team1_data.standing;
@@ -401,7 +464,11 @@
           return;
         }
 
-        if (footballMode === 'players' && team) {
+        if (footballMode === 'players') {
+          if (!team) {
+            resultDiv.innerHTML = `<p style="color:#ef4444">Escribe un equipo para ver jugadores y el análisis.</p>`;
+            return;
+          }
           const response = await fetch(`${API_BASE}/football/team`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -409,7 +476,7 @@
           });
           const data = await response.json();
           if (!response.ok) {
-            resultDiv.innerHTML = `<p style="color:#ef4444">${data.detail}</p>`;
+            resultDiv.innerHTML = `<p style="color:#ef4444">${formatError(data)}</p>`;
             return;
           }
           const stats = data.stats || {};
@@ -426,7 +493,7 @@
         const response = await fetch(`${API_BASE}/api/football/teams?league=${league}`);
         const data = await response.json();
         if (!response.ok) {
-          resultDiv.innerHTML = `<p style="color:#ef4444">${data.detail}</p>`;
+          resultDiv.innerHTML = `<p style="color:#ef4444">${formatError(data)}</p>`;
           return;
         }
 
