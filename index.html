@@ -428,7 +428,7 @@ async function openTeam(id, name, keepToolbar) {
           dashState.payload.ai_analysis = ai.ai_analysis;
           if (ai.recommendation) dashState.payload.recommendation = ai.recommendation;
           const box = document.getElementById("ai-card");
-          if (box) box.innerHTML = renderAI(ai.ai_analysis);
+          if (box) box.outerHTML = renderAI(ai.ai_analysis);
         }
       }).catch(() => {});
   } catch (e) {
@@ -457,7 +457,7 @@ async function openPlayer(id, name, teamId, keepToolbar) {
         if (ai && ai.ai_analysis && dashState && dashState.kind === "player") {
           dashState.payload.ai_analysis = ai.ai_analysis;
           const box = document.getElementById("ai-card");
-          if (box) box.innerHTML = renderAI(ai.ai_analysis);
+          if (box) box.outerHTML = renderAI(ai.ai_analysis);
         }
       }).catch(() => {});
   } catch (e) {
@@ -541,6 +541,7 @@ function renderFromState() {
 
   const rowsHtml = Object.values(stats).map(m => {
     if (!m) return "";
+    if (m.key === "saves" && !data.is_goalkeeper) return "";
     const hot = m.hit_rate >= 60 ? "hot" : m.hit_rate <= 40 ? "cold" : "";
     const active = m.key === (dashState.market) ? " active" : "";
     return `<div class="prop${active}" data-key="${m.key}">
