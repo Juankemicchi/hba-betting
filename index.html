@@ -431,15 +431,6 @@ async function openNbaPlayer(id, name, teamId, keepToolbar, teamName) {
     dashState.market = data.primary;
     setStatus("");
     renderFromState();
-    fetch(`${API_BASE}/api/nba/analyze/player`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ ...body, include_ai: true, market: dashState.market }) })
-      .then(r => r.json()).then(ai => {
-        if (ai && ai.ai_analysis && dashState && dashState.kind === "nba") {
-          dashState.payload.ai_analysis = ai.ai_analysis;
-          if (ai.recommendation) dashState.payload.recommendation = ai.recommendation;
-          const box = document.getElementById("ai-card");
-          if (box) box.outerHTML = renderAI(ai.ai_analysis);
-        }
-      }).catch(() => {});
   } catch (e) {
     setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
   }
@@ -523,16 +514,6 @@ async function openTeam(id, name, keepToolbar) {
     setStatus("");
     renderFromState();
     loadSquad(id);
-    // AI in background
-    fetch(`${API_BASE}/api/football/analyze/team`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ ...body, include_ai: true, market: dashState.market }) })
-      .then(r => r.json()).then(ai => {
-        if (ai && ai.ai_analysis && dashState && dashState.kind === "team") {
-          dashState.payload.ai_analysis = ai.ai_analysis;
-          if (ai.recommendation) dashState.payload.recommendation = ai.recommendation;
-          const box = document.getElementById("ai-card");
-          if (box) box.outerHTML = renderAI(ai.ai_analysis);
-        }
-      }).catch(() => {});
   } catch (e) {
     setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
   }
@@ -557,14 +538,6 @@ async function openPlayer(id, name, teamId, keepToolbar) {
     dashState.market = data.primary;
     setStatus("");
     renderFromState();
-    fetch(`${API_BASE}/api/football/analyze/player`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ ...body, include_ai: true, market: dashState.market }) })
-      .then(r => r.json()).then(ai => {
-        if (ai && ai.ai_analysis && dashState && dashState.kind === "player") {
-          dashState.payload.ai_analysis = ai.ai_analysis;
-          const box = document.getElementById("ai-card");
-          if (box) box.outerHTML = renderAI(ai.ai_analysis);
-        }
-      }).catch(() => {});
   } catch (e) {
     setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
   }
@@ -660,10 +633,129 @@ function renderStars(n) {
   const c = Math.max(1, Math.min(5, Number(n) || 1));
   return `<div class="stars">${"★".repeat(c)}${"☆".repeat(5-c)}</div>`;
 }
-function renderAI(text) {
-  if (!text) return `<div class="card ai" id="ai-card"><h3>Análisis de IA</h3><p class="hint">Preparando análisis…</p></div>`;
+function renderAI(text, pending) {
+  if (pending || !text) return `<div class="card ai" id="ai-card"><h3>Análisis de IA</h3><p class="hint">Generando análisis…</p></div>`;
   return `<div class="card ai" id="ai-card"><h3>Análisis de IA</h3><p>${escapeHtml(text)}</p></div>`;
 }
+
+const insightCache = new Map();
+let insightTimer = null;
+let insightAbort = null;
+let insightReqId = 0;
+
+function insightKey() {
+  if (!dashState || !dashState.payload) return "";
+  const d = dashState.payload;
+  const m = activeMarket() || {};
+  const line = m.kind === "yesno" ? (m.side || m.line || "yes") : m.line;
+  return [
+    dashState.kind || "",
+    dashState.id || dashState.name || "",
+    m.key || "",
+    line,
+    d.last_n || "",
+    d.venue || "all",
+    (dashState.opponent || d.opponent || "")
+  ].join("|");
+}
+
+function paintAI(text, pending) {
+  const box = document.getElementById("ai-card");
+  if (!box) return;
+  box.outerHTML = renderAI(text, pending);
+}
+
+function scheduleInsight() {
+  if (!dashState || !dashState.payload) return;
+  const key = insightKey();
+  if (!key) return;
+  if (insightCache.has(key)) {
+    const text = insightCache.get(key);
+    dashState.payload.ai_analysis = text;
+    dashState.payload.ai_key = key;
+    paintAI(text, false);
+    return;
+  }
+  dashState.payload.ai_analysis = null;
+  dashState.payload.ai_key = key;
+  paintAI(null, true);
+  clearTimeout(insightTimer);
+  if (insightAbort) { try { insightAbort.abort(); } catch (e) {} insightAbort = null; }
+  insightTimer = setTimeout(() => fetchInsight(key), 700);
+}
+
+function fetchInsight(expectedKey) {
+  if (!dashState || !dashState.payload) return;
+  const key = expectedKey || insightKey();
+  if (key !== insightKey()) return;
+  if (insightCache.has(key)) {
+    const text = insightCache.get(key);
+    dashState.payload.ai_analysis = text;
+    paintAI(text, false);
+    return;
+  }
+  const market = activeMarket();
+  if (!market) return;
+  const rec = clientRecommend(market) || {};
+  const data = dashState.payload;
+  const person = data.player || data.team || {};
+  const isYesNo = market.kind === "yesno";
+  const body = {
+    kind: dashState.kind,
+    name: person.fullname || person.name || dashState.name,
+    entity_id: dashState.id,
+    market: market.key,
+    label: market.label,
+    line: isYesNo ? (market.side || market.line || "yes") : market.line,
+    side: isYesNo ? (market.side || market.line || "yes") : null,
+    market_kind: isYesNo ? "yesno" : "line",
+    avg: market.avg,
+    hit_rate: market.hit_rate,
+    hits: market.hits,
+    games: market.games,
+    yes_rate: market.yes_rate,
+    no_rate: market.no_rate,
+    lean: rec.lean,
+    confidence: rec.confidence,
+    values: (market.values || []).slice(0, 10),
+    last_n: data.last_n,
+    venue: data.venue || "all",
+    opponent: dashState.opponent || null,
+    form: data.form,
+    record: data.record || null,
+    team: (data.team && data.team.name) || person.team_name || dashState.teamName || null,
+    season: data.season,
+    is_goalkeeper: !!data.is_goalkeeper
+  };
+  if (insightAbort) { try { insightAbort.abort(); } catch (e) {} }
+  const ac = new AbortController();
+  insightAbort = ac;
+  const reqId = ++insightReqId;
+  fetch(`${API_BASE}/api/insight`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: ac.signal
+  }).then(r => r.json()).then(res => {
+    if (reqId !== insightReqId) return;
+    if (!dashState || insightKey() !== key) return;
+    const text = res && res.ai_analysis;
+    if (!text) { paintAI("No se pudo generar el análisis. Inténtalo de nuevo.", false); return; }
+    if (insightCache.size > 80) {
+      const first = insightCache.keys().next().value;
+      insightCache.delete(first);
+    }
+    insightCache.set(key, text);
+    dashState.payload.ai_analysis = text;
+    paintAI(text, false);
+  }).catch(err => {
+    if (err && err.name === "AbortError") return;
+    if (reqId !== insightReqId) return;
+    if (!dashState || insightKey() !== key) return;
+    paintAI("No se pudo generar el análisis. Inténtalo de nuevo.", false);
+  });
+}
+
 
 function renderFromState() {
   const dash = document.getElementById("dash");
@@ -767,7 +859,7 @@ function renderFromState() {
           <div class="lean ${lean}">LEAN ${escapeHtml(leanLabel)}</div>
           <div class="hint" style="margin-top:8px">${isYesNo ? `Sí ${market && market.yes_rate != null ? market.yes_rate + "%" : "–"} · No ${market && market.no_rate != null ? market.no_rate + "%" : "–"}` : `Promedio ${market && market.avg != null ? market.avg : "–"} vs línea ${market ? market.line : "–"}`}</div>
         </div>
-        ${renderAI(data.ai_analysis)}
+        ${renderAI((insightCache.has(insightKey()) ? insightCache.get(insightKey()) : null), !insightCache.has(insightKey()))}
         ${isPlayer ? '' : '<div class="card" id="squad-card"></div>'}
       </div>
     </div>`;
@@ -801,6 +893,7 @@ function renderFromState() {
     renderFromState();
   }));
   drawChart(values, isYesNo ? 0.5 : (market && market.line), market && market.label, isYesNo);
+  scheduleInsight();
 }
 
 function drawChart(values, line, label, yesNo) {
