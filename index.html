@@ -213,7 +213,7 @@
         <div id="vip-tab-slip" class="hidden"></div>
         <div id="vip-tab-chat" class="hidden"></div>
       </div>
-      <p class="vip-disclaimer">+18. Apuesta bajo tu propia responsabilidad.</p>
+      <p id="vip-disclaimer" class="vip-disclaimer hidden">+18. Apuesta bajo tu propia responsabilidad.</p>
     </div>
   </div>
 
@@ -232,10 +232,6 @@
     <div id="home"></div>
     <div id="dash" class="hidden"></div>
   </main>
-
-  <footer class="footer">
-    +18. Apuesta bajo tu propia responsabilidad.
-  </footer>
 
 <script>
 const API_BASE = "https://hba-backend.onrender.com";
@@ -1099,6 +1095,8 @@ async function bootVip() {
 
 function renderVipGate(msg) {
   document.getElementById("vip-app").classList.add("hidden");
+  const disc = document.getElementById("vip-disclaimer");
+  if (disc) disc.classList.add("hidden");
   const gate = document.getElementById("vip-gate");
   gate.classList.remove("hidden");
   const supabaseBlock = vipConfig.supabase ? `
@@ -1196,6 +1194,8 @@ function setVipTab(tab) {
   if (tab === "picks") renderPicksTab();
   if (tab === "slip") renderSlipTab();
   if (tab === "chat") renderChatTab();
+  const disc = document.getElementById("vip-disclaimer");
+  if (disc) disc.classList.toggle("hidden", tab !== "picks");
 }
 
 function renderPicksTab() {
