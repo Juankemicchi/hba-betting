@@ -1269,13 +1269,16 @@ async function loadVipPicks() {
         <div class="risk-${p.risk || "media"}">${(p.risk || "").toUpperCase()} riesgo</div>
       </div>
       <div class="vip-match">${p.match || p.entity || ""}</div>
-      <div class="vip-meta">${[p.league, p.kickoff, p.sport === "nba" ? "NBA" : ""].filter(Boolean).join(" · ")}</div>
+      <div class="vip-meta">${[p.sport === "nba" ? "NBA" : (p.sport === "football" ? "Fútbol" : ""), (p.league && p.league !== "NBA") ? p.league : "", p.kickoff].filter(Boolean).join(" · ")}</div>
       <div class="vip-market"><strong>${p.market_label || p.market}</strong> · ${p.selection || ""}${p.line != null ? " " + p.line : ""}</div>
+      ${p.line_label && p.line_estimated != null ? `<div class="vip-meta">${p.line_label}: ${p.line_estimated}${p.median != null ? " · mediana " + p.median : ""}${p.avg != null ? " · prom. " + p.avg : ""}</div>` : ""}
+      ${p.book_line != null ? `<div class="vip-meta">${p.book_line_label || "Línea en casas (vía Grok)"}: ${p.book_line}${p.book_source ? " · " + p.book_source : ""}</div>` : ""}
       ${p.bet_name ? `<div class="vip-meta">Casas: ${p.bet_name}${p.odds_value ? " · " + p.odds_value : ""}</div>` : ""}
       <div class="vip-stats">
         <div class="vip-stat"><span>Hit rate</span><b>${p.hit_rate}%</b></div>
         <div class="vip-stat"><span>Muestra</span><b>${p.hits}/${p.games}</b></div>
         <div class="vip-stat"><span>Confianza</span><b>${p.confidence || "–"}/5</b></div>
+        ${p.avg_minutes != null ? `<div class="vip-stat"><span>Minutos</span><b>${p.avg_minutes}</b></div>` : ""}
         ${p.avg_odd != null ? `<div class="vip-stat"><span>Cuota prom.</span><b>${p.avg_odd}</b></div>` : ""}
         ${p.odd_min != null && p.odd_max != null ? `<div class="vip-stat"><span>Rango</span><b>${p.odd_min}–${p.odd_max}</b></div>` : ""}
         ${p.bookmakers != null ? `<div class="vip-stat"><span>Casas</span><b>${p.bookmakers}</b></div>` : ""}
