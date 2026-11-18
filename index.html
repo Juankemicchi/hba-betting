@@ -1059,7 +1059,6 @@ function applyVipAuthConfig(data) {
   }
   if (vipConfig.supabase_url && vipConfig.supabase_anon_key) {
     vipConfig.supabase = true;
-    vipConfig.google = true;
   }
 }
 async function bootVip() {
@@ -1108,8 +1107,7 @@ function renderVipGate(msg) {
         <button type="button" class="btn" onclick="vipEmailLogin()">Iniciar sesión</button>
         <button type="button" class="chip" onclick="vipEmailSignup()">Crear cuenta</button>
       </div>
-      <button type="button" class="chip" style="margin-bottom:12px" onclick="vipGoogleLogin()">Continuar con Google</button>
-    ` : `<p class="vip-soon">Inicio de sesión con correo y Google: se activará cuando la cuenta de Supabase esté conectada.</p>`;
+    ` : `<p class="vip-soon">Inicio de sesión con correo y contraseña: se activará cuando la cuenta de Supabase esté conectada.</p>`;
   gate.innerHTML = `
     <h3>Inicia sesión / acceso VIP</h3>
     <p>Esta sección es exclusiva. Entra con tu cuenta VIP o, si tienes un código de acceso, úsalo para probar el asistente.</p>
@@ -1182,13 +1180,6 @@ async function vipEmailSignup() {
     if (data.session) return vipAfterSupabaseSession(data.session);
     renderVipGate("Cuenta creada. Revisa tu correo si pide confirmación y luego inicia sesión. El acceso VIP lo activa el administrador.");
   } catch (e) { renderVipGate(e.message || "Error al crear la cuenta"); }
-}
-async function vipGoogleLogin() {
-  try {
-    const sb = await ensureSupabase();
-    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + window.location.pathname } });
-    if (error) renderVipGate(error.message);
-  } catch (e) { renderVipGate(e.message || "Error con Google"); }
 }
 
 function showVipApp() {
