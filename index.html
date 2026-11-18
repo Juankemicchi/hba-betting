@@ -1271,6 +1271,7 @@ async function loadVipPicks() {
       <div class="vip-match">${p.match || p.entity || ""}</div>
       <div class="vip-meta">${[p.league, p.kickoff, p.sport === "nba" ? "NBA" : ""].filter(Boolean).join(" · ")}</div>
       <div class="vip-market"><strong>${p.market_label || p.market}</strong> · ${p.selection || ""}${p.line != null ? " " + p.line : ""}</div>
+      ${p.bet_name ? `<div class="vip-meta">Casas: ${p.bet_name}${p.odds_value ? " · " + p.odds_value : ""}</div>` : ""}
       <div class="vip-stats">
         <div class="vip-stat"><span>Hit rate</span><b>${p.hit_rate}%</b></div>
         <div class="vip-stat"><span>Muestra</span><b>${p.hits}/${p.games}</b></div>
