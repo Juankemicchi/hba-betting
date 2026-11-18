@@ -42,7 +42,7 @@
     .search-wrap input { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 16px; padding: 16px 18px 16px 46px; font-size: 1rem; outline: none; }
     .search-wrap input:focus { border-color: var(--gold); }
     .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
-    .suggest { position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); max-height: 380px; overflow: auto; display: none; z-index: 15; }
+    .suggest { position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); max-height: 380px; overflow: auto; display: none; z-index: 30; }
     .suggest.open { display: block; }
     .sg-sec { padding: 8px 12px 4px; font-size: .7rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
     .sg-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; }
@@ -89,10 +89,10 @@
     .lean.UNDER { background: rgba(255,77,106,.12); color: var(--red); }
     .lean.NEUTRAL { background: #1e2d4d; color: var(--muted); }
     .rows { display: flex; flex-direction: column; gap: 6px; }
-    .prop { display: grid; grid-template-columns: 1fr auto auto auto 72px; gap: 8px; align-items: center; padding: 8px 8px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; }
+    .prop { display: grid; grid-template-columns: minmax(110px,1.3fr) 70px 64px 58px 72px; gap: 8px; align-items: center; padding: 8px 8px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; }
     .prop:hover, .prop.active { background: var(--card2); border-color: var(--border); }
     .prop .name { font-size: .85rem; }
-    .prop .avg, .prop .line, .prop .pct { font-size: .8rem; color: var(--muted); }
+    .prop .avg, .prop .line, .prop .pct { font-size: .8rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
     .prop .pct.hot { color: var(--green); font-weight: 700; }
     .prop .pct.cold { color: var(--red); font-weight: 700; }
     .prop input { width: 64px; background: #0b1020; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 4px 6px; }
@@ -104,7 +104,7 @@
     .pill.miss { background: rgba(255,77,106,.15); color: var(--red); }
     .ai p { line-height: 1.55; font-size: .92rem; color: #d5def0; white-space: pre-wrap; }
     .ai h3 { color: var(--gold); font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
-    .squad { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+    .squad { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px; }
     .squad-item { min-width: 88px; text-align: center; cursor: pointer; }
     .squad-item img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: #0b1020; }
     .squad-item div { font-size: .7rem; margin-top: 4px; color: var(--muted); }
