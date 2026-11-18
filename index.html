@@ -1275,6 +1275,10 @@ async function loadVipPicks() {
         <div class="vip-stat"><span>Hit rate</span><b>${p.hit_rate}%</b></div>
         <div class="vip-stat"><span>Muestra</span><b>${p.hits}/${p.games}</b></div>
         <div class="vip-stat"><span>Confianza</span><b>${p.confidence || "–"}/5</b></div>
+        ${p.avg_odd != null ? `<div class="vip-stat"><span>Cuota prom.</span><b>${p.avg_odd}</b></div>` : ""}
+        ${p.odd_min != null && p.odd_max != null ? `<div class="vip-stat"><span>Rango</span><b>${p.odd_min}–${p.odd_max}</b></div>` : ""}
+        ${p.bookmakers != null ? `<div class="vip-stat"><span>Casas</span><b>${p.bookmakers}</b></div>` : ""}
+        ${p.edge != null ? `<div class="vip-stat"><span>Edge</span><b>${p.edge > 0 ? "+" : ""}${p.edge}%</b></div>` : ""}
       </div>
       <p class="vip-reason">${p.reason || ""}</p>
     </article>
