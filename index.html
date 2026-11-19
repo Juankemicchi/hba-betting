@@ -6,6 +6,9 @@
   <title>HBA Sports Intelligence</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>■</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://hba-backend.onrender.com" crossorigin>
+  <link rel="dns-prefetch" href="https://hba-backend.onrender.com">
+  <link rel="preconnect" href="https://media.api-sports.io">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -362,7 +365,7 @@ async function loadLeague(id) {
     setStatus(`${data.league_name || ""} · temporada ${data.season || ""}`.trim());
     home.innerHTML = `<div class="grid">` + currentTeams.map(t => `
       <div class="team-card" data-id="${t.id}" data-name="${escapeHtml(t.name)}">
-        ${t.logo ? `<img src="${t.logo}" alt="">` : ""}
+        ${t.logo ? `<img loading="lazy" src="${t.logo}" alt="">` : ""}
         <strong>${escapeHtml(t.name)}</strong>
         <span>${escapeHtml((t.venue && t.venue.city) || t.code || "")}</span>
       </div>`).join("") + `</div>`;
@@ -397,14 +400,14 @@ async function runSearch(q, openFirst) {
     if (teams.length) {
       html += `<div class="sg-sec">Equipos</div>` + teams.map(t => `
         <div class="sg-item" data-kind="team" data-id="${t.id}" data-name="${escapeHtml(t.name)}">
-          ${t.logo ? `<img src="${t.logo}" alt="">` : ""}
+          ${t.logo ? `<img loading="lazy" src="${t.logo}" alt="">` : ""}
           <div><strong>${escapeHtml(t.name)}</strong><div class="muted" style="font-size:.75rem">${escapeHtml(t.country || "")}</div></div>
         </div>`).join("");
     }
     if (players.length) {
       html += `<div class="sg-sec">Jugadores</div>` + players.map(p => `
         <div class="sg-item" data-kind="player" data-id="${p.id}" data-name="${escapeHtml(p.fullname || p.name)}" data-team="${p.team_id || ""}" data-team-name="${escapeHtml(p.team_name || "")}">
-          ${p.photo ? `<img src="${p.photo}" alt="">` : ""}
+          ${p.photo ? `<img loading="lazy" src="${p.photo}" alt="">` : ""}
           <div><strong>${escapeHtml(p.fullname || p.name)}</strong><div class="muted" style="font-size:.75rem">${escapeHtml(p.position || "")} ${escapeHtml(p.nationality || "")}</div></div>
         </div>`).join("");
     }
@@ -455,7 +458,7 @@ function renderNbaTeamGrid(teams) {
   const home = document.getElementById("home");
   home.innerHTML = `<div class="grid">` + (teams || []).map(t => `
     <div class="team-card" data-id="${t.id}" data-name="${escapeHtml(t.name)}">
-      ${t.logo ? `<img src="${t.logo}" alt="">` : ""}
+      ${t.logo ? `<img loading="lazy" src="${t.logo}" alt="">` : ""}
       <strong>${escapeHtml(t.name)}</strong>
       <span>${escapeHtml(t.short_name || "NBA")}</span>
     </div>`).join("") + `</div>`;
@@ -498,10 +501,10 @@ async function openNbaTeam(id, name) {
     const players = data.players || [];
     setStatus(team.name || name);
     if (nbaTeams.length) renderNbaChips(id);
-    home.innerHTML = `<div class="card"><h2 style="margin-bottom:14px;display:flex;align-items:center;gap:10px">${team.logo ? `<img src="${team.logo}" alt="" style="width:36px;height:36px;object-fit:contain">` : ""}${escapeHtml(team.name || name)}</h2>
+    home.innerHTML = `<div class="card"><h2 style="margin-bottom:14px;display:flex;align-items:center;gap:10px">${team.logo ? `<img loading="lazy" src="${team.logo}" alt="" style="width:36px;height:36px;object-fit:contain">` : ""}${escapeHtml(team.name || name)}</h2>
       <div class="grid">` + players.map(p => `
         <div class="team-card" data-id="${p.id}" data-name="${escapeHtml(p.name)}" data-team="${id}" data-team-name="${escapeHtml(team.name || name || "")}">
-          ${p.photo ? `<img src="${p.photo}" alt="" style="border-radius:50%;object-fit:cover">` : ""}
+          ${p.photo ? `<img loading="lazy" src="${p.photo}" alt="" style="border-radius:50%;object-fit:cover">` : ""}
           <strong>${escapeHtml(p.name)}</strong>
           <span>${escapeHtml([p.number ? "#"+p.number : "", p.position].filter(Boolean).join(" · "))}</span>
         </div>`).join("") + `</div></div>`;
@@ -516,22 +519,31 @@ async function openNbaPlayer(id, name, teamId, keepToolbar, teamName) {
   document.getElementById("dash").classList.remove("hidden");
   dashState = { kind: "nba", id, name, teamId, teamName: teamName || (dashState && dashState.teamName) };
   renderFtToolbar("nba");
-  setStatus(`Cargando estadísticas de ${name}…`);
   const params = ftParams();
   const body = { player_id: id, player: name, last_n: params.last_n, include_ai: false };
+  const cached = readStatsCache("nba", body);
+  if (cached) {
+    dashState.payload = cached;
+    dashState.market = cached.primary;
+    setStatus("");
+    renderFromState();
+  } else {
+    setStatus(`Cargando estadísticas de ${name}…`);
+  }
   try {
     const res = await fetch(`${API_BASE}/api/nba/analyze/player`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
     const data = await res.json();
-    if (!res.ok) { setStatus(formatError(data), true); return; }
+    if (!res.ok) { if (!cached) setStatus(formatError(data), true); return; }
     if ((!(data.team && data.team.name)) && dashState.teamName) {
       data.team = Object.assign({}, data.team || {}, { name: dashState.teamName });
     }
     dashState.payload = data;
     dashState.market = data.primary;
+    writeStatsCache("nba", body, data);
     setStatus("");
     renderFromState();
   } catch (e) {
-    setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
+    if (!cached) setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
   }
 }
 
@@ -593,14 +605,37 @@ function refreshCurrent() {
   if (dashState.kind === "nba") openNbaPlayer(dashState.id, dashState.name, dashState.teamId, true);
 }
 
+
+function statsCacheKey(kind, body) {
+  return "hba-stats:" + kind + ":" + JSON.stringify(body);
+}
+function readStatsCache(kind, body) {
+  try {
+    const item = JSON.parse(sessionStorage.getItem(statsCacheKey(kind, body)) || "null");
+    if (item && Date.now() - item.ts < 30 * 60 * 1000) return item.data;
+  } catch (e) {}
+  return null;
+}
+function writeStatsCache(kind, body, data) {
+  try { sessionStorage.setItem(statsCacheKey(kind, body), JSON.stringify({ ts: Date.now(), data })); } catch (e) {}
+}
+
 async function openTeam(id, name, keepToolbar) {
   document.getElementById("home").innerHTML = "";
   document.getElementById("dash").classList.remove("hidden");
   dashState = { kind: "team", id, name, opponent: ((document.getElementById("ft-opp")||{}).value||"").trim() };
   renderFtToolbar("team");
-  setStatus(`Cargando estadísticas de ${name}…`);
   const params = ftParams();
   const body = { team_id: id, team: name, league: currentLeague, last_n: params.last_n, venue: params.venue, include_ai: false }; if (params.opponent) body.opponent = params.opponent;
+  const cached = readStatsCache("team", body);
+  if (cached) {
+    dashState.payload = cached;
+    dashState.market = cached.primary;
+    setStatus("");
+    renderFromState();
+  } else {
+    setStatus(`Cargando estadísticas de ${name}…`);
+  }
   try {
     const res = await fetch(`${API_BASE}/api/football/analyze/team`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
     const data = await res.json();
@@ -610,11 +645,12 @@ async function openTeam(id, name, keepToolbar) {
     }
     dashState.payload = data;
     dashState.market = data.primary;
+    writeStatsCache("team", body, data);
     setStatus("");
     renderFromState();
     loadSquad(id);
   } catch (e) {
-    setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
+    if (!cached) setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
   }
 }
 
@@ -623,22 +659,31 @@ async function openPlayer(id, name, teamId, keepToolbar) {
   document.getElementById("dash").classList.remove("hidden");
   dashState = { kind: "player", id, name, teamId };
   renderFtToolbar("player");
-  setStatus(`Cargando estadísticas de ${name}…`);
   const params = ftParams();
   const body = { player_id: id, player: name, team_id: teamId || null, league: currentLeague, last_n: params.last_n, include_ai: false };
+  const cached = readStatsCache("player", body);
+  if (cached) {
+    dashState.payload = cached;
+    dashState.market = cached.primary;
+    setStatus("");
+    renderFromState();
+  } else {
+    setStatus(`Cargando estadísticas de ${name}…`);
+  }
   try {
     const res = await fetch(`${API_BASE}/api/football/analyze/player`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
     const data = await res.json();
-    if (!res.ok) { setStatus(formatError(data), true); return; }
+    if (!res.ok) { if (!cached) setStatus(formatError(data), true); return; }
     if ((!(data.team && data.team.name)) && dashState.teamName) {
       data.team = Object.assign({}, data.team || {}, { name: dashState.teamName });
     }
     dashState.payload = data;
     dashState.market = data.primary;
+    writeStatsCache("player", body, data);
     setStatus("");
     renderFromState();
   } catch (e) {
-    setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
+    if (!cached) setStatus("Error de conexión. Si el servidor estaba dormido, inténtalo de nuevo.", true);
   }
 }
 
@@ -653,7 +698,7 @@ async function loadSquad(teamId) {
     host.innerHTML = `<h3 style="margin-bottom:10px;font-size:.9rem;">Plantilla</h3><div class="squad">` +
       currentSquad.map(p => `
         <div class="squad-item" data-id="${p.id}" data-name="${escapeHtml(p.name)}" data-team="${teamId}">
-          ${p.photo ? `<img src="${p.photo}" alt="">` : ""}
+          ${p.photo ? `<img loading="lazy" src="${p.photo}" alt="">` : ""}
           <div>${escapeHtml(p.number != null ? p.number + " · " : "")}${escapeHtml(p.name)}<br>${escapeHtml(p.position || "")}</div>
         </div>`).join("") + `</div>`;
     host.querySelectorAll(".squad-item").forEach(el => el.addEventListener("click", () => openPlayer(Number(el.dataset.id), el.dataset.name, Number(el.dataset.team))));
@@ -950,7 +995,7 @@ function renderFromState() {
       </div>
       <div class="col">
         <div class="card spot">
-          ${photo ? `<img class="${isPlayer ? "" : "crest"}" src="${photo}" alt="">` : ""}
+          ${photo ? `<img loading="lazy" class="${isPlayer ? "" : "crest"}" src="${photo}" alt="">` : ""}
           <h2>${escapeHtml(title || "")}</h2>
           <div class="hint">${escapeHtml(sub)}</div>
           ${renderGauge(pct)}
@@ -1416,11 +1461,12 @@ async function loadVipPicks() {
   if (!status || !list) return;
   const sport = document.getElementById("vip-sport").value;
   const league = document.getElementById("vip-league").value;
-  status.textContent = "Calculando picks con las estadísticas de HBA…";
   const localCached = readLocalVipPicks(sport, league);
   if (localCached && (localCached.picks || []).length) {
     list.innerHTML = renderVipPickCards(localCached.picks);
+    paintVipPicksStatus(status, localCached);
   } else {
+    status.textContent = "Calculando picks con las estadísticas de HBA…";
     list.innerHTML = "";
   }
   let path = `/api/vip/picks?sport=${encodeURIComponent(sport)}`;
