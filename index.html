@@ -157,6 +157,25 @@
     .verdict.strong { background: rgba(46,229,157,.12); color: var(--green); }
     .verdict.mixed { background: #1e2d4d; color: var(--muted); }
     .verdict.weak { background: rgba(255,77,106,.12); color: var(--red); }
+
+    .support-link { color: var(--muted); font-size: .82rem; font-weight: 600; text-decoration: none; padding: 8px 10px; }
+    .support-link:hover { color: var(--text); }
+    .site-footer { max-width: 1280px; margin: 0 auto; padding: 18px 20px 28px; color: var(--muted); font-size: .78rem; text-align: center; line-height: 1.5; }
+    .site-footer a { color: #f0d78c; text-decoration: none; font-weight: 700; }
+    .site-footer a:hover { text-decoration: underline; }
+    .vip-support { color: var(--muted); font-size: .78rem; margin: 10px 4px 0; }
+    .vip-support a { color: #f0d78c; text-decoration: none; font-weight: 700; }
+    .vip-support a:hover { text-decoration: underline; }
+    .hist-summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0 16px; }
+    .hist-stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 8px; text-align: center; }
+    .hist-stat b { display: block; font-size: 1.05rem; }
+    .hist-stat span { color: var(--muted); font-size: .7rem; }
+    .hist-day { margin: 16px 0 8px; font-weight: 700; font-size: .92rem; }
+    .hist-result { font-weight: 800; font-size: .78rem; letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; }
+    .hist-result.ganado { color: #7dffb0; }
+    .hist-result.perdido { color: #ff8d8d; }
+    .hist-result.nulo, .hist-result.pendiente { color: var(--muted); }
+    .hist-units { color: var(--muted); font-size: .78rem; margin-top: 6px; }
     .vip-disclaimer { color: var(--muted); font-size: .72rem; line-height: 1.45; margin-top: auto; }
     .vip-chatlog { display: flex; flex-direction: column; gap: 8px; min-height: 220px; max-height: 52vh; overflow: auto; margin-bottom: 10px; }
     .vip-bubble { max-width: 92%; padding: 10px 12px; border-radius: 12px; font-size: .88rem; line-height: 1.5; white-space: pre-wrap; }
@@ -169,6 +188,7 @@
       .topbar { flex-direction: column; align-items: flex-start; }
       .top-actions { width: 100%; justify-content: space-between; }
       .vip-panel { width: 100%; }
+      .hist-summary { grid-template-columns: repeat(3, 1fr); }
       .prop { grid-template-columns: 1fr auto auto; }
       .prop .spark { display: none; }
     }
@@ -189,6 +209,7 @@
         <button class="tab active" id="tab-football" onclick="setSport('football')">Fútbol</button>
         <button class="tab disabled" disabled>Tenis <small>Próximamente</small></button>
       </nav>
+      <a class="support-link" href="mailto:soporte@hbabetting.com">Soporte</a>
       <button type="button" class="vip-btn" id="vip-open" onclick="openVip()"><span class="vip-star">✦</span> VIP AI Assistant</button>
     </div>
   </header>
@@ -206,10 +227,13 @@
       <div id="vip-app" class="vip-app hidden">
         <div class="vip-tabs">
           <button type="button" class="vip-tab active" id="vtab-picks" onclick="setVipTab('picks')">Picks del día</button>
+          <button type="button" class="vip-tab" id="vtab-history" onclick="setVipTab('history')">Historial</button>
           <button type="button" class="vip-tab" id="vtab-slip" onclick="setVipTab('slip')">Analizar mi apuesta</button>
           <button type="button" class="vip-tab" id="vtab-chat" onclick="setVipTab('chat')">Chat VIP</button>
         </div>
+        <p class="vip-support">¿Dudas o ayuda? Escríbenos a <a href="mailto:soporte@hbabetting.com">soporte@hbabetting.com</a>.</p>
         <div id="vip-tab-picks"></div>
+        <div id="vip-tab-history" class="hidden"></div>
         <div id="vip-tab-slip" class="hidden"></div>
         <div id="vip-tab-chat" class="hidden"></div>
       </div>
@@ -232,6 +256,10 @@
     <div id="home"></div>
     <div id="dash" class="hidden"></div>
   </main>
+
+  <footer class="site-footer">
+    <p>¿Necesitas ayuda? Escríbenos a <a href="mailto:soporte@hbabetting.com">soporte@hbabetting.com</a>.</p>
+  </footer>
 
 <script>
 const API_BASE = "https://hba-backend.onrender.com";
@@ -1187,15 +1215,110 @@ function showVipApp() {
   setVipTab("picks");
 }
 function setVipTab(tab) {
-  ["picks", "slip", "chat"].forEach(id => {
+  ["picks", "history", "slip", "chat"].forEach(id => {
     document.getElementById("vtab-" + id).classList.toggle("active", id === tab);
     document.getElementById("vip-tab-" + id).classList.toggle("hidden", id !== tab);
   });
   if (tab === "picks") renderPicksTab();
+  if (tab === "history") renderHistoryTab();
   if (tab === "slip") renderSlipTab();
   if (tab === "chat") renderChatTab();
   const disc = document.getElementById("vip-disclaimer");
   if (disc) disc.classList.toggle("hidden", tab !== "picks");
+}
+
+function histResultLabel(result) {
+  const r = (result || "pendiente").toLowerCase();
+  if (r === "ganado") return "Ganado";
+  if (r === "perdido") return "Perdido";
+  if (r === "nulo") return "Nulo";
+  return "Pendiente";
+}
+
+function formatUnits(units) {
+  if (units == null || units === "") return "";
+  const n = Number(units);
+  if (Number.isNaN(n)) return "";
+  const sign = n > 0 ? "+" : "";
+  return sign + n.toFixed(2) + " u";
+}
+
+function renderHistoryTab() {
+  const el = document.getElementById("vip-tab-history");
+  if (!el.dataset.ready) {
+    el.innerHTML = `
+      <p id="vip-history-status" class="hint" style="margin-top:12px">Cargando el historial…</p>
+      <div id="vip-history-summary"></div>
+      <div id="vip-history-list"></div>
+    `;
+    el.dataset.ready = "1";
+  }
+  loadVipHistory();
+}
+
+async function loadVipHistory() {
+  const status = document.getElementById("vip-history-status");
+  const summaryEl = document.getElementById("vip-history-summary");
+  const list = document.getElementById("vip-history-list");
+  if (!status || !list) return;
+  status.textContent = "Cargando el historial…";
+  const { res, data } = await vipFetch("/api/vip/history");
+  if (res.status === 401 || res.status === 403) return renderVipGate((data && data.detail) || "Se requiere acceso VIP.");
+  if (!res.ok || !data || data.ok === false) {
+    status.innerHTML = `<span class="err">${(data && (data.error || data.detail)) || "No se pudo cargar el historial."}</span>`;
+    return;
+  }
+  const s = data.summary || {};
+  const hit = s.hit_rate != null ? s.hit_rate + "%" : "–";
+  const units = formatUnits(s.units) || "0.00 u";
+  summaryEl.innerHTML = `
+    <div class="hist-summary">
+      <div class="hist-stat"><b>${s.total || 0}</b><span>Total</span></div>
+      <div class="hist-stat"><b>${s.won || 0}</b><span>Ganados</span></div>
+      <div class="hist-stat"><b>${s.lost || 0}</b><span>Perdidos</span></div>
+      <div class="hist-stat"><b>${hit}</b><span>Acierto</span></div>
+      <div class="hist-stat"><b>${units}</b><span>Unidades</span></div>
+    </div>
+  `;
+  const days = data.days || [];
+  if (!days.length) {
+    status.textContent = "Aún no hay picks publicados en el historial.";
+    list.innerHTML = "";
+    return;
+  }
+  status.innerHTML = `<strong>Historial de picks</strong>`;
+  list.innerHTML = days.map(day => {
+    const ds = day.summary || {};
+    const dayHit = ds.hit_rate != null ? " · " + ds.hit_rate + "%" : "";
+    const dayUnits = formatUnits(ds.units);
+    const headExtra = dayUnits ? " · " + dayUnits : "";
+    const cards = (day.picks || []).map(p => {
+      const result = (p.result || "pendiente").toLowerCase();
+      const odd = p.odd != null ? p.odd : "";
+      const line = p.line != null ? " " + p.line : "";
+      const unitsLine = formatUnits(p.units);
+      const sport = p.sport === "nba" ? "NBA" : (p.sport === "football" ? "Fútbol" : (p.sport || ""));
+      const league = (p.league && p.league !== "NBA") ? p.league : "";
+      return `
+        <article class="vip-pick${p.maxima_confianza ? " maxima" : ""}">
+          <div class="vip-pick-top">
+            <div class="vip-rank">${sport}${p.maxima_confianza ? ' <span class="vip-maxima">Máxima confianza</span>' : ""}</div>
+            <div class="hist-result ${result}">${histResultLabel(result)}</div>
+          </div>
+          <div class="vip-match">${p.match || p.entity || ""}</div>
+          <div class="vip-meta">${[league, p.kickoff].filter(Boolean).join(" · ")}</div>
+          <div class="vip-market"><strong>${p.market_label || p.market || ""}</strong> · ${p.selection || ""}${line}</div>
+          <div class="vip-stats">
+            ${odd !== "" ? `<div class="vip-stat"><span>Cuota</span><b>${odd}</b></div>` : ""}
+            ${p.confidence != null ? `<div class="vip-stat"><span>Confianza</span><b>${p.confidence}/5</b></div>` : ""}
+            ${p.actual_value != null && p.actual_value !== "" ? `<div class="vip-stat"><span>Final</span><b>${p.actual_value}</b></div>` : ""}
+          </div>
+          ${unitsLine ? `<div class="hist-units">${unitsLine}</div>` : ""}
+        </article>
+      `;
+    }).join("");
+    return `<div class="hist-day">${day.date}${dayHit}${headExtra}</div>${cards}`;
+  }).join("");
 }
 
 function renderPicksTab() {
