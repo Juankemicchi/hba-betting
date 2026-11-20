@@ -180,10 +180,80 @@
     .hist-result.nulo, .hist-result.pendiente { color: var(--muted); }
     .hist-units { color: var(--muted); font-size: .78rem; margin-top: 6px; }
     .vip-disclaimer { color: var(--muted); font-size: .72rem; line-height: 1.45; margin-top: auto; }
-    .vip-chatlog { display: flex; flex-direction: column; gap: 8px; min-height: 220px; max-height: 52vh; overflow: auto; margin-bottom: 10px; }
-    .vip-bubble { max-width: 92%; padding: 10px 12px; border-radius: 12px; font-size: .88rem; line-height: 1.5; white-space: pre-wrap; }
-    .vip-bubble.user { margin-left: auto; background: #1e2d4d; }
-    .vip-bubble.assistant { background: var(--card); border: 1px solid var(--border); }
+    /* Top 3 del día */
+    .top3 { position: relative; background: linear-gradient(160deg, rgba(243,193,94,.14), rgba(18,26,43,.9) 45%); border: 1px solid rgba(243,193,94,.55); border-radius: 18px; padding: 14px 12px 6px; margin: 4px 0 16px; box-shadow: 0 10px 28px rgba(201,146,45,.12); }
+    .top3-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 4px 10px; }
+    .top3-title { color: var(--gold); font-weight: 800; font-size: .82rem; letter-spacing: .12em; text-transform: uppercase; }
+    .top3-sub { color: var(--muted); font-size: .7rem; }
+    .top3-item { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; background: rgba(8,12,22,.55); border: 1px solid var(--border); border-radius: 14px; padding: 10px; margin-bottom: 8px; }
+    .top3-item.maxima { border-color: var(--gold); }
+    .top3-medal { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: .95rem; color: #1a1305; background: linear-gradient(135deg, #f8d27a, #c9922d); }
+    .top3-medal.r2 { background: linear-gradient(135deg, #e6ebf5, #9aa6bd); }
+    .top3-medal.r3 { background: linear-gradient(135deg, #f0b98a, #a8663a); }
+    .top3-main { min-width: 0; }
+    .top3-match { font-weight: 700; font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .top3-market { font-size: .8rem; color: #d5def0; margin-top: 2px; }
+    .top3-meta { font-size: .68rem; color: var(--muted); margin-top: 3px; }
+    .top3-level { display: inline-block; font-size: .62rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 2px 6px; border-radius: 6px; background: #1e2d4d; color: #c8d4ee; margin-top: 4px; }
+    .top3-level.maxima { background: linear-gradient(90deg, #c9a227, #f0d78c); color: #1a1408; }
+    .top3-level.alta { background: rgba(46,229,157,.14); color: var(--green); }
+    .top3-odd { text-align: right; }
+    .top3-odd b { display: block; font-size: 1.05rem; color: var(--text); }
+    .top3-odd span { font-size: .62rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+    .top3-note { color: var(--muted); font-size: .68rem; margin: 2px 4px 8px; line-height: 1.4; }
+
+    /* Chat VIP: AI chat look */
+    .ai-chat { display: flex; flex-direction: column; height: calc(100vh - 232px); height: calc(100dvh - 232px); min-height: 380px; margin-top: 10px; background: linear-gradient(180deg, rgba(12,18,32,.6), rgba(8,12,22,.9)); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
+    .ai-chat-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); background: rgba(8,12,22,.75); backdrop-filter: blur(8px); }
+    .ai-avatar { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: .8rem; color: #1a1305; background: linear-gradient(135deg, #f8d27a, #e0a83a 55%, #c9922d); box-shadow: 0 0 0 2px rgba(243,193,94,.18); }
+    .ai-avatar.lg { width: 56px; height: 56px; font-size: 1.4rem; box-shadow: 0 0 0 6px rgba(243,193,94,.10), 0 10px 30px rgba(201,146,45,.25); }
+    .ai-head-txt { flex: 1; min-width: 0; }
+    .ai-head-name { font-weight: 800; font-size: .9rem; }
+    .ai-head-status { font-size: .7rem; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+    .ai-dot-online { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .ai-new { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 6px 10px; font-size: .72rem; font-weight: 700; cursor: pointer; }
+    .ai-new:hover { color: var(--text); border-color: #3a4a6b; }
+    .ai-log { flex: 1; overflow-y: auto; padding: 16px 12px 8px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    .ai-row { display: flex; gap: 8px; align-items: flex-end; animation: aiIn .22s ease-out; }
+    .ai-row.user { justify-content: flex-end; }
+    .ai-col { display: flex; flex-direction: column; max-width: 84%; min-width: 0; }
+    .ai-row.user .ai-col { align-items: flex-end; }
+    .ai-msg { padding: 10px 13px; border-radius: 18px; font-size: .9rem; line-height: 1.55; word-wrap: break-word; overflow-wrap: anywhere; }
+    .ai-row.assistant .ai-msg { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius: 6px; color: #e3eaf8; }
+    .ai-row.user .ai-msg { background: linear-gradient(135deg, #2a3d66, #1e2d4d); border: 1px solid #34497a; border-bottom-right-radius: 6px; white-space: pre-wrap; }
+    .ai-row.error .ai-msg { border-color: rgba(255,77,106,.45); color: #ffc2cc; }
+    .ai-msg p { margin: 0 0 8px; } .ai-msg p:last-child { margin-bottom: 0; }
+    .ai-msg ul, .ai-msg ol { margin: 4px 0 8px 18px; } .ai-msg li { margin: 3px 0; }
+    .ai-msg strong { color: #fff; font-weight: 700; }
+    .ai-msg h4 { font-size: .92rem; color: var(--gold); margin: 6px 0 6px; }
+    .ai-msg code { background: #0b1020; border: 1px solid var(--border); border-radius: 6px; padding: 1px 5px; font-size: .82rem; }
+    .ai-msg a { color: #f0d78c; }
+    .ai-time { font-size: .62rem; color: #5f6f8e; margin: 4px 6px 0; display: flex; gap: 10px; align-items: center; }
+    .ai-copy { background: none; border: 0; color: #5f6f8e; font-size: .62rem; cursor: pointer; padding: 0; }
+    .ai-copy:hover { color: var(--text); }
+    .ai-retry { background: none; border: 0; color: #f0d78c; font-size: .66rem; font-weight: 700; cursor: pointer; padding: 0; }
+    .ai-caret { display: inline-block; width: 7px; height: 1em; background: var(--gold); margin-left: 2px; vertical-align: -2px; border-radius: 1px; animation: aiBlink 1s steps(1) infinite; }
+    .ai-typing { display: inline-flex; gap: 5px; align-items: center; padding: 14px 16px !important; }
+    .ai-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); opacity: .4; animation: aiBounce 1.2s infinite ease-in-out; }
+    .ai-typing i:nth-child(2) { animation-delay: .15s; } .ai-typing i:nth-child(3) { animation-delay: .3s; }
+    .ai-empty { margin: auto 0; text-align: center; padding: 10px 6px 4px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .ai-empty h3 { font-size: 1.15rem; margin-top: 4px; }
+    .ai-empty p { color: var(--muted); font-size: .82rem; line-height: 1.5; max-width: 340px; }
+    .ai-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px; }
+    .ai-chip { background: var(--card); border: 1px solid var(--border); color: #d5def0; border-radius: 999px; padding: 8px 12px; font-size: .78rem; cursor: pointer; text-align: left; transition: border-color .15s, transform .15s; }
+    .ai-chip:hover { border-color: rgba(243,193,94,.6); transform: translateY(-1px); }
+    .ai-composer { position: sticky; bottom: 0; padding: 10px 10px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: rgba(8,12,22,.92); backdrop-filter: blur(10px); }
+    .ai-inputbox { display: flex; align-items: flex-end; gap: 8px; background: #0b1020; border: 1px solid var(--border); border-radius: 22px; padding: 6px 6px 6px 14px; transition: border-color .15s, box-shadow .15s; }
+    .ai-inputbox:focus-within { border-color: rgba(243,193,94,.6); box-shadow: 0 0 0 3px rgba(243,193,94,.10); }
+    #vip-app textarea.ai-input { flex: 1; min-height: 24px; max-height: 140px; resize: none; background: transparent; border: 0; outline: none; padding: 7px 0; margin: 0; font-size: 16px; line-height: 1.4; color: var(--text); font-family: inherit; overflow-y: auto; }
+    .ai-send { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; background: linear-gradient(135deg, #f8d27a, #e0a83a 55%, #c9922d); color: #1a1305; transition: opacity .15s, transform .1s; }
+    .ai-send:active { transform: scale(.94); }
+    .ai-send:disabled { opacity: .35; cursor: default; }
+    .ai-hint { font-size: .62rem; color: #5f6f8e; text-align: center; margin-top: 6px; }
+    @keyframes aiBounce { 0%, 80%, 100% { transform: translateY(0); opacity: .35; } 40% { transform: translateY(-5px); opacity: 1; } }
+    @keyframes aiBlink { 50% { opacity: 0; } }
+    @keyframes aiIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    @media (max-width: 900px) { .ai-chat { height: calc(100vh - 250px); height: calc(100dvh - 250px); } }
     .vip-file { font-size: .8rem; color: var(--muted); margin: 0 0 10px; }
     .vip-parlay { background: var(--card); border: 1px solid var(--gold); border-radius: 14px; padding: 12px; margin: 10px 0; }
     @media (max-width: 900px) {
@@ -1407,7 +1477,7 @@ function onVipSportChange() {
 }
 
 function vipPicksStorageKey(sport, league) {
-  return "hba_vip_picks:" + sport + ":" + (league || "all");
+  return "hba_vip_picks_v9:" + sport + ":" + (league || "all");
 }
 function readLocalVipPicks(sport, league) {
   try {
@@ -1427,6 +1497,52 @@ function paintVipPicksStatus(status, data) {
   status.innerHTML = `<strong>${windowLabel}</strong> · ${data.date}`;
 }
 
+function vipLevelLabel(p) {
+  if (p.maxima_confianza) return { cls: "maxima", txt: "Máxima confianza" };
+  const c = Number(p.confidence || 0);
+  if (c >= 5) return { cls: "alta", txt: "Confianza muy alta" };
+  if (c >= 4) return { cls: "alta", txt: "Confianza alta" };
+  if (c >= 3) return { cls: "", txt: "Confianza media" };
+  return { cls: "", txt: "Confianza baja" };
+}
+function vipTop3(picks) {
+  const list = (picks || []).filter(Boolean);
+  let top = list.filter(p => p.top3_rank).sort((a, b) => a.top3_rank - b.top3_rank);
+  if (!top.length) {
+    const score = p => Math.max(Number(p.edge) || 0, 0) * (Number(p.confidence) || 0) + (Number(p.model_prob) || 0) * 0.01 + (p.avg_odd != null ? 0.5 : 0);
+    top = list.slice().sort((a, b) => score(b) - score(a) || (b.confidence || 0) - (a.confidence || 0));
+  }
+  return top.slice(0, 3);
+}
+function renderVipTop3(picks) {
+  const top = vipTop3(picks);
+  if (!top.length) return "";
+  const maxCount = top.filter(p => p.maxima_confianza).length;
+  const items = top.map((p, i) => {
+    const lvl = vipLevelLabel(p);
+    const hour = p.kickoff ? String(p.kickoff).slice(11, 16) : "";
+    const meta = [p.sport === "nba" ? "NBA" : (p.league || "Fútbol"), hour, p.edge != null ? "Edge +" + p.edge + "%" : ""].filter(Boolean).join(" · ");
+    return `
+      <div class="top3-item${p.maxima_confianza ? " maxima" : ""}">
+        <div class="top3-medal r${i + 1}">${i + 1}</div>
+        <div class="top3-main">
+          <div class="top3-match">${escapeHtml(p.match || p.entity || "")}</div>
+          <div class="top3-market"><strong>${escapeHtml(p.market_label || p.market || "")}</strong> · ${escapeHtml(p.selection || "")}${p.line != null ? " " + p.line : ""}</div>
+          <div class="top3-meta">${escapeHtml(meta)}</div>
+          <span class="top3-level ${lvl.cls}">${lvl.txt}</span>
+        </div>
+        <div class="top3-odd">${p.avg_odd != null ? `<b>${p.avg_odd}</b><span>Cuota</span>` : `<b>${p.hit_rate != null ? p.hit_rate + "%" : "–"}</b><span>Hit rate</span>`}</div>
+      </div>`;
+  }).join("");
+  const note = maxCount >= 3 ? "Los 3 cumplen todos los filtros de Máxima confianza."
+    : `${maxCount} de 3 con Máxima confianza hoy; el resto muestra su nivel real. Ordenados por valor (edge × confianza).`;
+  return `
+    <section class="top3">
+      <div class="top3-head"><div class="top3-title">★ Top 3 del día</div><div class="top3-sub">Lo más sólido de HBA</div></div>
+      ${items}
+      <p class="top3-note">${note}</p>
+    </section>`;
+}
 function renderVipPickCards(picks) {
   return (picks || []).map(p => `
     <article class="vip-pick${p.maxima_confianza ? " maxima" : ""}">
@@ -1463,7 +1579,7 @@ async function loadVipPicks() {
   const league = document.getElementById("vip-league").value;
   const localCached = readLocalVipPicks(sport, league);
   if (localCached && (localCached.picks || []).length) {
-    list.innerHTML = renderVipPickCards(localCached.picks);
+    list.innerHTML = renderVipTop3(localCached.picks) + renderVipPickCards(localCached.picks);
     paintVipPicksStatus(status, localCached);
   } else {
     status.textContent = "Calculando picks con las estadísticas de HBA…";
@@ -1486,7 +1602,7 @@ async function loadVipPicks() {
     list.innerHTML = `<p class="hint">${data.empty_reason || "No hay picks con muestra suficiente para esta pizarra."}</p>`;
     return;
   }
-  list.innerHTML = renderVipPickCards(data.picks);
+  list.innerHTML = renderVipTop3(data.picks) + renderVipPickCards(data.picks);
 
 }
 
@@ -1551,50 +1667,213 @@ async function analyzeVipSlip() {
   }).join("");
 }
 
+const VIP_CHAT_STORE = "hba_vip_chat_v2";
+const VIP_CHAT_SUGGESTIONS = [
+  "¿Cuáles son los picks más sólidos de hoy?",
+  "Hit rate de córners del Real Madrid en sus últimos 15",
+  "¿Luka Doncic pasa de 32.5 puntos esta noche?",
+  "Forma reciente de Millonarios y su próximo rival",
+];
+let vipChatBusy = false;
+(function loadChatStore() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(VIP_CHAT_STORE) || "[]");
+    if (Array.isArray(saved)) vipChatHistory = saved.filter(m => m && m.role && typeof m.content === "string").slice(-40);
+  } catch (e) {}
+})();
+function saveVipChat() {
+  try { localStorage.setItem(VIP_CHAT_STORE, JSON.stringify(vipChatHistory.filter(m => !m.error).slice(-40))); } catch (e) {}
+}
+function chatTime(ts) {
+  const d = ts ? new Date(ts) : new Date();
+  return d.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
+}
+function mdInline(t) {
+  return t
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+function renderMarkdown(src) {
+  const lines = escapeHtml(src).replace(/\r/g, "").split("\n");
+  let html = "", list = null, para = [];
+  const flushPara = () => { if (para.length) { html += "<p>" + mdInline(para.join("<br>")) + "</p>"; para = []; } };
+  const closeList = () => { if (list) { html += `</${list}>`; list = null; } };
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    let m;
+    if (!line.trim()) { flushPara(); closeList(); continue; }
+    if ((m = line.match(/^\s*#{1,6}\s+(.*)$/))) { flushPara(); closeList(); html += "<h4>" + mdInline(m[1]) + "</h4>"; continue; }
+    if ((m = line.match(/^\s*[-*•]\s+(.*)$/))) { flushPara(); if (list !== "ul") { closeList(); html += "<ul>"; list = "ul"; } html += "<li>" + mdInline(m[1]) + "</li>"; continue; }
+    if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/))) { flushPara(); if (list !== "ol") { closeList(); html += "<ol>"; list = "ol"; } html += "<li>" + mdInline(m[1]) + "</li>"; continue; }
+    closeList(); para.push(line);
+  }
+  flushPara(); closeList();
+  return html;
+}
 function renderChatTab() {
   const el = document.getElementById("vip-tab-chat");
-  if (el.dataset.ready) return;
+  if (el.dataset.ready) { paintVipChat(); return; }
   el.innerHTML = `
-    <div id="vip-chatlog" class="vip-chatlog"></div>
-    <textarea id="vip-chat-input" rows="3" placeholder="Pregunta con datos reales: hit rate de corners de Millonarios, forma de un equipo, props NBA…"></textarea>
-    <button type="button" class="btn" onclick="sendVipChat()">Enviar</button>
-    <p id="vip-chat-status" class="hint"></p>
+    <div class="ai-chat">
+      <div class="ai-chat-head">
+        <div class="ai-avatar">H</div>
+        <div class="ai-head-txt">
+          <div class="ai-head-name">HBA AI</div>
+          <div class="ai-head-status"><span class="ai-dot-online"></span>En línea · fútbol y NBA</div>
+        </div>
+        <button type="button" class="ai-new" onclick="newVipChat()">+ Nuevo chat</button>
+      </div>
+      <div id="vip-chatlog" class="ai-log" aria-live="polite"></div>
+      <div class="ai-composer">
+        <div class="ai-inputbox">
+          <textarea id="vip-chat-input" class="ai-input" rows="1" placeholder="Pregúntale a HBA AI…" enterkeyhint="send"></textarea>
+          <button type="button" id="vip-chat-send" class="ai-send" onclick="sendVipChat()" aria-label="Enviar" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+        <div class="ai-hint">HBA AI usa estadísticas reales, pero puede equivocarse. +18.</div>
+      </div>
+    </div>
   `;
   el.dataset.ready = "1";
+  const input = document.getElementById("vip-chat-input");
+  const send = document.getElementById("vip-chat-send");
+  const grow = () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 140) + "px";
+    send.disabled = vipChatBusy || !input.value.trim();
+  };
+  input.addEventListener("input", grow);
+  input.addEventListener("keydown", ev => {
+    const touch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    if (ev.key === "Enter" && !ev.shiftKey && !touch) { ev.preventDefault(); sendVipChat(); }
+  });
   paintVipChat();
 }
-function paintVipChat() {
+function vipChatRow(m, idx) {
+  if (m.role === "user") {
+    return `<div class="ai-row user"><div class="ai-col"><div class="ai-msg">${escapeHtml(m.content)}</div><div class="ai-time">${chatTime(m.ts)}</div></div></div>`;
+  }
+  const err = m.error ? " error" : "";
+  const tools = m.error
+    ? `<button type="button" class="ai-retry" onclick="retryVipChat()">Reintentar</button>`
+    : `<button type="button" class="ai-copy" onclick="copyVipChat(${idx})">Copiar</button>`;
+  return `<div class="ai-row assistant${err}"><div class="ai-avatar">H</div><div class="ai-col"><div class="ai-msg" data-idx="${idx}">${renderMarkdown(m.content)}</div><div class="ai-time">HBA AI · ${chatTime(m.ts)} ${tools}</div></div></div>`;
+}
+function vipChatNearBottom(log) {
+  return log.scrollHeight - log.scrollTop - log.clientHeight < 120;
+}
+function scrollVipChat(force) {
   const log = document.getElementById("vip-chatlog");
   if (!log) return;
-  if (!vipChatHistory.length) {
-    log.innerHTML = `<div class="vip-bubble assistant">Hola. Soy el asistente VIP de HBA. Puedo consultar estadísticas reales de equipos y jugadores antes de responder. ¿Qué quieres revisar?</div>`;
+  if (force || vipChatNearBottom(log)) log.scrollTop = log.scrollHeight;
+}
+function paintVipChat(opts) {
+  const log = document.getElementById("vip-chatlog");
+  if (!log) return;
+  opts = opts || {};
+  if (!vipChatHistory.length && !opts.typing) {
+    log.innerHTML = `
+      <div class="ai-empty">
+        <div class="ai-avatar lg">H</div>
+        <h3>¿Qué analizamos hoy?</h3>
+        <p>Soy HBA AI. Consulto estadísticas reales de equipos y jugadores antes de responderte.</p>
+        <div class="ai-chips">${VIP_CHAT_SUGGESTIONS.map(q => `<button type="button" class="ai-chip" onclick="askVipChat(this.textContent)">${escapeHtml(q)}</button>`).join("")}</div>
+      </div>`;
     return;
   }
-  log.innerHTML = vipChatHistory.map(m => `<div class="vip-bubble ${m.role}">${escapeHtml(m.content)}</div>`).join("");
-  log.scrollTop = log.scrollHeight;
+  let html = vipChatHistory.map((m, i) => vipChatRow(m, i)).join("");
+  if (opts.typing) html += `<div class="ai-row assistant" id="ai-typing-row"><div class="ai-avatar">H</div><div class="ai-col"><div class="ai-msg ai-typing"><i></i><i></i><i></i></div></div></div>`;
+  log.innerHTML = html;
+  scrollVipChat(true);
 }
-function escapeHtml(s) {
-  return String(s || "").replace(/[&<>]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[ch]));
+function askVipChat(text) {
+  const input = document.getElementById("vip-chat-input");
+  if (!input) return;
+  input.value = text;
+  sendVipChat();
+}
+function newVipChat() {
+  if (vipChatBusy) return;
+  vipChatHistory = [];
+  saveVipChat();
+  paintVipChat();
+  const input = document.getElementById("vip-chat-input");
+  if (input) input.focus();
+}
+function copyVipChat(idx) {
+  const m = vipChatHistory[idx];
+  if (!m) return;
+  try { navigator.clipboard.writeText(m.content); } catch (e) {}
+}
+function retryVipChat() {
+  if (vipChatBusy) return;
+  while (vipChatHistory.length && vipChatHistory[vipChatHistory.length - 1].error) vipChatHistory.pop();
+  const last = vipChatHistory[vipChatHistory.length - 1];
+  if (!last || last.role !== "user") return paintVipChat();
+  requestVipChat();
+}
+function typewriteVipChat(idx) {
+  return new Promise(resolve => {
+    const m = vipChatHistory[idx];
+    const box = document.querySelector(`#vip-chatlog .ai-msg[data-idx="${idx}"]`);
+    if (!m || !box) return resolve();
+    const full = m.content;
+    const total = full.length;
+    const duration = Math.min(2200, Math.max(500, total * 9));
+    const start = performance.now();
+    const step = now => {
+      const n = Math.min(total, Math.ceil(total * (now - start) / duration));
+      box.innerHTML = renderMarkdown(full.slice(0, n)) + (n < total ? '<span class="ai-caret"></span>' : "");
+      scrollVipChat(false);
+      if (n < total) requestAnimationFrame(step); else resolve();
+    };
+    requestAnimationFrame(step);
+  });
+}
+function setVipChatBusy(busy) {
+  vipChatBusy = busy;
+  const input = document.getElementById("vip-chat-input");
+  const send = document.getElementById("vip-chat-send");
+  if (send) send.disabled = busy || !(input && input.value.trim());
+}
+async function requestVipChat() {
+  setVipChatBusy(true);
+  paintVipChat({ typing: true });
+  const payload = { messages: vipChatHistory.filter(m => !m.error).slice(-12).map(m => ({ role: m.role, content: m.content })) };
+  let res, data;
+  try {
+    ({ res, data } = await vipFetch("/api/vip/chat", { method: "POST", body: JSON.stringify(payload) }));
+  } catch (e) {
+    res = { ok: false, status: 0 }; data = null;
+  }
+  if (res.status === 401 || res.status === 403) { setVipChatBusy(false); return renderVipGate((data && data.detail) || "Se requiere acceso VIP."); }
+  if (!res.ok || !data || !data.ok) {
+    vipChatHistory.push({ role: "assistant", error: true, ts: Date.now(), content: (data && (data.error || data.detail)) || "No pude completar la respuesta. Revisa tu conexión e inténtalo de nuevo." });
+    paintVipChat();
+    setVipChatBusy(false);
+    return;
+  }
+  vipChatHistory.push({ role: "assistant", content: data.message || "", ts: Date.now() });
+  const idx = vipChatHistory.length - 1;
+  paintVipChat();
+  await typewriteVipChat(idx);
+  saveVipChat();
+  setVipChatBusy(false);
 }
 async function sendVipChat() {
   const input = document.getElementById("vip-chat-input");
-  const status = document.getElementById("vip-chat-status");
+  if (!input || vipChatBusy) return;
   const text = (input.value || "").trim();
   if (!text) return;
-  vipChatHistory.push({ role: "user", content: text });
+  while (vipChatHistory.length && vipChatHistory[vipChatHistory.length - 1].error) vipChatHistory.pop();
+  vipChatHistory.push({ role: "user", content: text, ts: Date.now() });
+  saveVipChat();
   input.value = "";
-  paintVipChat();
-  status.textContent = "Consultando estadísticas y generando respuesta…";
-  const payload = { messages: vipChatHistory.slice(-12) };
-  const { res, data } = await vipFetch("/api/vip/chat", { method: "POST", body: JSON.stringify(payload) });
-  if (res.status === 401 || res.status === 403) return renderVipGate((data && data.detail) || "Se requiere acceso VIP.");
-  if (!res.ok || !data || !data.ok) {
-    status.innerHTML = `<span class="err">${(data && (data.error || data.detail)) || "No se pudo completar el chat. Inténtalo de nuevo."}</span>`;
-    return;
-  }
-  vipChatHistory.push({ role: "assistant", content: data.message || "" });
-  paintVipChat();
-  status.textContent = "";
+  input.style.height = "auto";
+  await requestVipChat();
 }
 
 
