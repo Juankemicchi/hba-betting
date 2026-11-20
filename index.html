@@ -205,6 +205,9 @@
     .vip-status.live { background: rgba(91,140,255,.18); color: #9db8ff; }
     .vip-status.won { background: rgba(46,229,157,.15); color: #7dffb0; }
     .vip-status.lost { background: rgba(255,77,106,.15); color: #ff8d8d; }
+    .vip-pending { text-align: center; background: linear-gradient(160deg, rgba(243,193,94,.12), rgba(18,26,43,.9) 50%); border: 1px solid rgba(243,193,94,.45); border-radius: 18px; padding: 26px 18px 22px; margin: 6px 0 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .vip-pending h3 { font-size: 1.08rem; color: var(--gold); }
+    .vip-pending p { color: var(--muted); font-size: .84rem; line-height: 1.5; max-width: 340px; }
     .top3-note { color: var(--muted); font-size: .68rem; margin: 2px 4px 8px; line-height: 1.4; }
 
     /* Chat VIP: AI chat look */
@@ -1482,7 +1485,7 @@ function onVipSportChange() {
 }
 
 function vipPicksStorageKey(sport, league) {
-  return "hba_vip_picks_v9:" + sport + ":" + (league || "all");
+  return "hba_vip_picks_v10:" + sport + ":" + (league || "all");
 }
 function readLocalVipPicks(sport, league) {
   try {
@@ -1592,7 +1595,7 @@ async function loadVipPicks() {
   const sport = document.getElementById("vip-sport").value;
   const league = document.getElementById("vip-league").value;
   const localCached = readLocalVipPicks(sport, league);
-  if (localCached && (localCached.picks || []).length) {
+  if (localCached && localCached.frozen && (localCached.picks || []).length) {
     list.innerHTML = renderVipTop3(localCached.picks) + renderVipPickCards(localCached.picks);
     paintVipPicksStatus(status, localCached);
   } else {
@@ -1612,6 +1615,16 @@ async function loadVipPicks() {
   }
   paintVipPicksStatus(status, data);
   writeLocalVipPicks(sport, league, data);
+  if (data.pending) {
+    status.innerHTML = `<strong>Picks del día</strong> · ${data.date}`;
+    list.innerHTML = `
+      <div class="vip-pending">
+        <div class="ai-avatar lg">H</div>
+        <h3>${escapeHtml(data.empty_reason || "Los picks de hoy se publican pronto")}</h3>
+        <p>HBA está analizando todos los partidos del día. La tarjeta se publica una sola vez, antes del primer partido, y ya no cambia.</p>
+      </div>`;
+    return;
+  }
   if (!data.picks || !data.picks.length) {
     list.innerHTML = `<p class="hint">${data.empty_reason || "No hay picks con muestra suficiente para esta pizarra."}</p>`;
     return;
