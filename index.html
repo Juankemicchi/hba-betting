@@ -200,6 +200,11 @@
     .top3-odd { text-align: right; }
     .top3-odd b { display: block; font-size: 1.05rem; color: var(--text); }
     .top3-odd span { font-size: .62rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+    .vip-fixed { color: var(--gold); font-weight: 700; }
+    .vip-status { display: inline-block; margin-left: 6px; font-size: .6rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 2px 6px; border-radius: 6px; background: #1e2d4d; color: #c8d4ee; vertical-align: middle; }
+    .vip-status.live { background: rgba(91,140,255,.18); color: #9db8ff; }
+    .vip-status.won { background: rgba(46,229,157,.15); color: #7dffb0; }
+    .vip-status.lost { background: rgba(255,77,106,.15); color: #ff8d8d; }
     .top3-note { color: var(--muted); font-size: .68rem; margin: 2px 4px 8px; line-height: 1.4; }
 
     /* Chat VIP: AI chat look */
@@ -1494,7 +1499,7 @@ function writeLocalVipPicks(sport, league, data) {
 }
 function paintVipPicksStatus(status, data) {
   const windowLabel = data.window === "upcoming" ? "Próxima jornada" : "Picks del día";
-  status.innerHTML = `<strong>${windowLabel}</strong> · ${data.date}`;
+  status.innerHTML = `<strong>${windowLabel}</strong> · ${data.date}${data.frozen ? ' · <span class="vip-fixed">Tarjeta fija del día</span>' : ""}`;
 }
 
 function vipLevelLabel(p) {
@@ -1529,7 +1534,7 @@ function renderVipTop3(picks) {
           <div class="top3-match">${escapeHtml(p.match || p.entity || "")}</div>
           <div class="top3-market"><strong>${escapeHtml(p.market_label || p.market || "")}</strong> · ${escapeHtml(p.selection || "")}${p.line != null ? " " + p.line : ""}</div>
           <div class="top3-meta">${escapeHtml(meta)}</div>
-          <span class="top3-level ${lvl.cls}">${lvl.txt}</span>
+          <span class="top3-level ${lvl.cls}">${lvl.txt}</span>${vipStatusBadge(p)}
         </div>
         <div class="top3-odd">${p.avg_odd != null ? `<b>${p.avg_odd}</b><span>Cuota</span>` : `<b>${p.hit_rate != null ? p.hit_rate + "%" : "–"}</b><span>Hit rate</span>`}</div>
       </div>`;
@@ -1543,11 +1548,20 @@ function renderVipTop3(picks) {
       <p class="top3-note">${note}</p>
     </section>`;
 }
+function vipStatusBadge(p) {
+  const r = (p.result || "").toLowerCase();
+  if (r === "ganado") return ' <span class="vip-status won">Ganado</span>';
+  if (r === "perdido") return ' <span class="vip-status lost">Perdido</span>';
+  if (r === "nulo") return ' <span class="vip-status">Nulo</span>';
+  if (p.match_status === "en_juego") return ' <span class="vip-status live">En juego</span>';
+  if (p.match_status === "finalizado") return ' <span class="vip-status">Finalizado</span>';
+  return "";
+}
 function renderVipPickCards(picks) {
   return (picks || []).map(p => `
     <article class="vip-pick${p.maxima_confianza ? " maxima" : ""}">
       <div class="vip-pick-top">
-        <div class="vip-rank">PICK ${p.rank}${p.maxima_confianza ? ' <span class="vip-maxima">Máxima confianza</span>' : ""}</div>
+        <div class="vip-rank">PICK ${p.rank}${p.maxima_confianza ? ' <span class="vip-maxima">Máxima confianza</span>' : ""}${vipStatusBadge(p)}</div>
         <div class="risk-${p.risk || "media"}">${(p.risk || "").toUpperCase()} riesgo</div>
       </div>
       <div class="vip-match">${p.match || p.entity || ""}</div>
