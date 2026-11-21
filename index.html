@@ -1517,8 +1517,8 @@ function vipTop3(picks) {
   const list = (picks || []).filter(Boolean);
   let top = list.filter(p => p.top3_rank).sort((a, b) => a.top3_rank - b.top3_rank);
   if (!top.length) {
-    const score = p => Math.max(Number(p.edge) || 0, 0) * (Number(p.confidence) || 0) + (Number(p.model_prob) || 0) * 0.01 + (p.avg_odd != null ? 0.5 : 0);
-    top = list.slice().sort((a, b) => score(b) - score(a) || (b.confidence || 0) - (a.confidence || 0));
+    const score = p => (Number(p.hit_rate) || 0) + (Number(p.edge) || 0);
+    top = list.filter(p => p.maxima_confianza).slice().sort((a, b) => score(b) - score(a) || (Number(b.edge) || 0) - (Number(a.edge) || 0));
   }
   return top.slice(0, 3);
 }
@@ -1543,7 +1543,8 @@ function renderVipTop3(picks) {
       </div>`;
   }).join("");
   const note = maxCount >= 3 ? "Los 3 cumplen todos los filtros de Máxima confianza."
-    : `${maxCount} de 3 con Máxima confianza hoy; el resto muestra su nivel real. Ordenados por valor (edge × confianza).`;
+    : (maxCount === 0 ? "Hoy no hay picks de Máxima confianza."
+      : `Hoy hay ${maxCount} de Máxima confianza. El Top 3 solo muestra las que cumplen todos los filtros, ordenadas por acierto y valor.`);
   return `
     <section class="top3">
       <div class="top3-head"><div class="top3-title">★ Top 3 del día</div><div class="top3-sub">Lo más sólido de HBA</div></div>
